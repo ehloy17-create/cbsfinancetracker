@@ -393,21 +393,6 @@ export default function DashboardPage() {
             </button>
 
             <button
-              onClick={() => navigate('/checks')}
-              className="col-span-1 bg-gradient-to-br from-amber-600 to-amber-700 rounded-2xl p-4 text-left text-white hover:from-amber-700 hover:to-amber-800 transition-all shadow-md group"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                  <FileText className="w-4 h-4 text-white" />
-                </div>
-                <ArrowRight className="w-4 h-4 text-amber-300 group-hover:translate-x-0.5 transition-transform" />
-              </div>
-              <p className="text-amber-200 text-xs font-medium mb-1">Check Issuance</p>
-              <p className="text-2xl font-black leading-tight">{formatCurrency(outstandingTotal)}</p>
-              <p className="text-amber-300 text-xs mt-1">Outstanding checks</p>
-            </button>
-
-            <button
               onClick={() => navigate('/disbursements')}
               className="col-span-1 bg-gradient-to-br from-rose-600 to-rose-700 rounded-2xl p-4 text-left text-white hover:from-rose-700 hover:to-rose-800 transition-all shadow-md group"
             >
@@ -420,6 +405,21 @@ export default function DashboardPage() {
               <p className="text-rose-200 text-xs font-medium mb-1">Disbursement</p>
               <p className="text-2xl font-black leading-tight">{formatCurrency(payableOutstanding)}</p>
               <p className="text-rose-300 text-xs mt-1">Payables outstanding</p>
+            </button>
+
+            <button
+              onClick={() => navigate('/finance-deposits')}
+              className="col-span-1 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-2xl p-4 text-left text-white hover:from-indigo-600 hover:to-indigo-700 transition-all shadow-md group"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Banknote className="w-4 h-4 text-white" />
+                </div>
+                <ArrowRight className="w-4 h-4 text-indigo-300 group-hover:translate-x-0.5 transition-transform" />
+              </div>
+              <p className="text-indigo-200 text-xs font-medium mb-1">Deposit</p>
+              <p className="text-2xl font-black leading-tight">{formatCurrency(totalVerifiedDeposits)}</p>
+              <p className="text-indigo-300 text-xs mt-1">Verified deposits</p>
             </button>
           </div>
         </>
