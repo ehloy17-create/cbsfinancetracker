@@ -5,6 +5,7 @@ import { supabase } from '../../lib/supabase';
 import { InvMovementType, InvProduct, InvLocation } from '../../lib/types';
 import { MOVEMENT_LABELS, MOVEMENT_COLORS, ALL_MOVEMENT_TYPES } from '../lib/movementUtils';
 import InvTable from '../components/InvTable';
+import { useToast } from '../../contexts/ToastContext';
 
 const PAGE_SIZE = 30;
 
@@ -37,6 +38,7 @@ function MovementTypeBadge({ type }: { type: InvMovementType }) {
 }
 
 export default function InvStockLedgerPage() {
+  const { showToast } = useToast();
   const [searchParams] = useSearchParams();
   const preProductId = searchParams.get('product_id') ?? '';
   const preLocationId = searchParams.get('location_id') ?? '';
@@ -95,9 +97,14 @@ export default function InvStockLedgerPage() {
     if (dateFrom) q = q.gte('created_at', `${dateFrom}T00:00:00`);
     if (dateTo) q = q.lte('created_at', `${dateTo}T23:59:59`);
 
-    q = q.order('created_at', { ascending: false });
+    q = q.order('created_at', { ascending: false }).limit(3000);
 
     const { data, error } = await q;
+    if (error) {
+      showToast('Failed to load inventory ledger: ' + error.message, 'error');
+      setLoading(false);
+      return;
+    }
     if (!error) {
       const productMap = new Map(products.map(product => [product.id, product]));
       const locationMap = new Map(locations.map(location => [location.id, location]));

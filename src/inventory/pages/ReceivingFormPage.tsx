@@ -124,7 +124,7 @@ export default function ReceivingFormPage() {
       const locationIds = [...new Set(rows.map((row) => row.location_id).filter(Boolean))];
       const [suppliersRes, locationsRes] = await Promise.all([
         supplierIds.length > 0
-          ? supabase.from('inv_suppliers').select('id, name, code').in('id', supplierIds)
+          ? supabase.from('suppliers').select('id, name, code').in('id', supplierIds)
           : Promise.resolve({ data: [], error: null }),
         locationIds.length > 0
           ? supabase.from('inv_locations').select('id, name, code').in('id', locationIds)
@@ -249,7 +249,7 @@ export default function ReceivingFormPage() {
         location_id: string;
       };
       const [supplierRes, locationRes] = await Promise.all([
-        supabase.from('inv_suppliers').select('id, name, code').eq('id', poRow.supplier_id).maybeSingle(),
+        supabase.from('suppliers').select('id, name, code').eq('id', poRow.supplier_id).maybeSingle(),
         supabase.from('inv_locations').select('id, name, code').eq('id', poRow.location_id).maybeSingle(),
       ]);
       setSelectedPo({

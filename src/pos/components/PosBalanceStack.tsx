@@ -85,26 +85,10 @@ export default function PosBalanceStack({ refreshKey = 0, shiftId }: { refreshKe
     const txns = (txnRows ?? []) as PosGcashTransaction[];
     const runningBalances = mapGcashRunningBalances(accounts, txns);
 
-    let shiftTxns: PosGcashTransaction[] = [];
-    if (shiftReport?.shift.shift_open_time) {
-      let shiftTxnQuery = supabase
-        .from('transactions')
-        .select('id, account_id, date, transaction_type, cash_in_mode, amount, transaction_fee, amount_received, delivery_fee, notes, created_by, created_at, updated_at, fee_type, cash_source, cash_out_type, bank_account_id, is_deleted, description, reference_number')
-        .eq('is_deleted', false)
-        .gte('created_at', shiftReport.shift.shift_open_time);
-
-      if (shiftReport.shift.shift_close_time) {
-        shiftTxnQuery = shiftTxnQuery.lte('created_at', shiftReport.shift.shift_close_time);
-      }
-
-      const { data: shiftTxnRows } = await shiftTxnQuery.order('created_at', { ascending: false });
-      shiftTxns = (shiftTxnRows ?? []) as PosGcashTransaction[];
-    }
-
     const nextAccountDetails = accounts.reduce<Record<string, { name: string; txns: PosGcashTransaction[] }>>((acc, account) => {
       acc[account.id] = {
         name: account.name,
-        txns: shiftTxns
+        txns: txns
           .filter(txn => txn.account_id === account.id)
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
       };
@@ -232,7 +216,7 @@ export default function PosBalanceStack({ refreshKey = 0, shiftId }: { refreshKe
             <div className="flex items-center justify-between border-b border-slate-700 px-5 py-4">
               <div>
                 <h3 className="text-lg font-semibold text-white">{selectedAccount.name}</h3>
-                <p className="text-xs text-slate-400">All transactions for this shift</p>
+                <p className="text-xs text-slate-400">Today's GCash transactions</p>
               </div>
               <button onClick={() => setSelectedAccountId(null)} className="text-slate-500 transition-colors hover:text-slate-300">
                 <X className="h-5 w-5" />

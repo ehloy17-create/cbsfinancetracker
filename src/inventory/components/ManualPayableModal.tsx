@@ -33,8 +33,8 @@ export default function ManualPayableModal({ open, onClose, onSaved }: Props) {
   useEffect(() => {
     if (!open) return;
     supabase
-      .from('inv_suppliers')
-      .select('id, code, name, payment_terms')
+      .from('suppliers')
+      .select('id, code, name, terms')
       .eq('is_active', true)
       .order('name')
       .then(({ data }) => {

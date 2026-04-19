@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   X, Search, UserPlus, Star, Phone, Mail, MapPin,
-  ChevronLeft, Check, Edit2, User, BookOpen, Receipt, Wallet,
+  ChevronLeft, Check, Edit2, User, BookOpen, Receipt, Wallet, Eye,
 } from 'lucide-react';
 import { CustomerPriceLevel, PosCustomer } from '../../lib/types';
 import { searchCustomers, createCustomer } from '../lib/posCheckout';
 import { supabase } from '../../lib/supabase';
 import { formatCurrency, formatDateTime } from '../../lib/utils';
+import ReceiptModal from './ReceiptModal';
 
 interface Props {
   onClose: () => void;
@@ -51,6 +52,7 @@ export default function PosCustomerModal({ onClose, onSelect, initialCustomer = 
   const [detailTarget, setDetailTarget] = useState<PosCustomer | null>(initialCustomer);
   const [ledgerRows, setLedgerRows] = useState<CustomerLedgerRow[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [viewOrderSale, setViewOrderSale] = useState<{ saleId: string; receiptNo: string } | null>(null);
   const searchRef               = useRef<HTMLInputElement>(null);
   const timerRef                = useRef<ReturnType<typeof setTimeout>>();
 
@@ -220,6 +222,7 @@ export default function PosCustomerModal({ onClose, onSelect, initialCustomer = 
     const lastPurchaseAt = completedRows[0]?.created_at ?? null;
 
     return (
+      <>
       <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden">
           <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
@@ -326,6 +329,7 @@ export default function PosCustomerModal({ onClose, onSelect, initialCustomer = 
                         <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
                         <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Payment</th>
                         <th className="text-right px-4 py-2.5 text-xs font-semibold text-slate-500 uppercase tracking-wide">Total</th>
+                        <th className="px-4 py-2.5"></th>
                       </tr>
                     </thead>
                     <tbody>
@@ -343,6 +347,14 @@ export default function PosCustomerModal({ onClose, onSelect, initialCustomer = 
                           </td>
                           <td className="px-4 py-3 text-slate-600 uppercase">{row.payment_method || '—'}</td>
                           <td className="px-4 py-3 text-right font-semibold text-slate-900">{formatCurrency(Number(row.total_amount ?? 0))}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              onClick={() => setViewOrderSale({ saleId: row.sale_id, receiptNo: row.receipt_no })}
+                              className="inline-flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors"
+                            >
+                              <Eye className="w-3.5 h-3.5" /> View
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -353,7 +365,15 @@ export default function PosCustomerModal({ onClose, onSelect, initialCustomer = 
           </div>
         </div>
       </div>
-    );
+      {viewOrderSale && (
+        <ReceiptModal
+          saleId={viewOrderSale.saleId}
+          receiptNo={viewOrderSale.receiptNo}
+          onClose={() => setViewOrderSale(null)}
+        />
+      )}
+    </>
+  );
   }
 
   // ── Form view (create or edit) ──────────────────────────────────────────────

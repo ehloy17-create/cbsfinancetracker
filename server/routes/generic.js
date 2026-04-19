@@ -560,7 +560,7 @@ const ALLOWED_TABLES = new Set([
   'suppliers', 'checks_issued', 'disbursements', 'daily_sales',
   'cash_daily_history', 'cashier_remittances',
   'inv_roles', 'inv_locations', 'inv_categories', 'inv_brands',
-  'inv_units', 'inv_suppliers', 'inv_products',
+  'inv_units', 'inv_products',
   'inv_product_unit_conversions', 'inv_product_selling_units', 'inv_product_pricing_history',
   'inventory_balances', 'inventory_movements',
   'purchase_orders', 'purchase_order_items',

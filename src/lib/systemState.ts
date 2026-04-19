@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 
 export const POS_ALLOW_NEGATIVE_QTY_KEY = 'pos_allow_negative_qty';
+export const POS_SENIOR_DISCOUNT_KEY = 'pos_senior_discount_enabled';
 
 function normalizeBoolean(value: unknown, fallback = false) {
   if (typeof value === 'boolean') return value;

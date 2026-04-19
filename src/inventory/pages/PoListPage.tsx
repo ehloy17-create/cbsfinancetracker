@@ -8,8 +8,8 @@ import InvTable from '../components/InvTable';
 
 const PAGE_SIZE = 25;
 
-type PoRow = Omit<PurchaseOrder, 'inv_suppliers' | 'inv_locations'> & {
-  inv_suppliers: { id: string; name: string; code: string };
+type PoRow = Omit<PurchaseOrder, 'suppliers' | 'inv_locations'> & {
+  suppliers: { id: string; name: string; code: string };
   inv_locations: { id: string; name: string; code: string };
 };
 
@@ -42,7 +42,7 @@ export default function PoListPage() {
   useEffect(() => {
     async function loadRefs() {
       const [sups, locs] = await Promise.all([
-        supabase.from('inv_suppliers').select('id, name, code').eq('is_active', true).order('name'),
+        supabase.from('suppliers').select('id, name, code').eq('is_active', true).order('name'),
         supabase.from('inv_locations').select('id, name, code').eq('is_active', true).order('name'),
       ]);
       setSuppliers(sups.data ?? []);
@@ -74,7 +74,7 @@ export default function PoListPage() {
 
       const mappedRows: PoRow[] = filteredRows.map((row) => ({
         ...row,
-        inv_suppliers: {
+        suppliers: {
           id: supplierMap.get(row.supplier_id)?.id ?? row.supplier_id,
           name: supplierMap.get(row.supplier_id)?.name ?? 'Unknown supplier',
           code: supplierMap.get(row.supplier_id)?.code ?? '',
@@ -124,8 +124,8 @@ export default function PoListPage() {
       label: 'Supplier',
       render: (r: PoRow) => (
         <div>
-          <p className="text-sm font-medium text-slate-800">{r.inv_suppliers.name}</p>
-          <p className="text-xs text-slate-400 font-mono">{r.inv_suppliers.code}</p>
+          <p className="text-sm font-medium text-slate-800">{r.suppliers.name}</p>
+          <p className="text-xs text-slate-400 font-mono">{r.suppliers.code}</p>
         </div>
       ),
     },

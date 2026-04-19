@@ -91,7 +91,7 @@ export default function PoFormPage() {
   useEffect(() => {
     async function loadRefs() {
       const [sups, locs] = await Promise.all([
-        supabase.from('inv_suppliers').select('*').eq('is_active', true).order('name'),
+        supabase.from('suppliers').select('*').eq('is_active', true).order('name'),
         supabase.from('inv_locations').select('*').eq('is_active', true).order('name'),
       ]);
       setSuppliers(sups.data ?? []);

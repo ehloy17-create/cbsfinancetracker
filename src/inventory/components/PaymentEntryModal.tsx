@@ -119,8 +119,8 @@ export default function PaymentEntryModal({ open, payable, onClose, onSaved }: P
           date: form.payment_date,
           tx_type: 'disbursement',
           amount: amt,
-          description: payable.inv_suppliers?.name
-            ? `Supplier payment - ${payable.inv_suppliers.name}`
+          description: payable.suppliers?.name
+            ? `Supplier payment - ${payable.suppliers.name}`
             : `Supplier payment - ${payable.payable_number}`,
           ref_number: form.reference_number.trim(),
           direction: 'debit',
@@ -159,8 +159,8 @@ export default function PaymentEntryModal({ open, payable, onClose, onSaved }: P
           reference_type: 'payable_payment',
           reference_id: paymentRow.id,
           source_module: 'payables',
-          description: payable.inv_suppliers?.name
-            ? `Owner paid supplier bill - ${payable.inv_suppliers.name}`
+          description: payable.suppliers?.name
+            ? `Owner paid supplier bill - ${payable.suppliers.name}`
             : `Owner paid supplier bill - ${payable.payable_number}`,
           increase_amount: amt,
           source_account_type: 'owner_personal',
@@ -200,7 +200,7 @@ export default function PaymentEntryModal({ open, payable, onClose, onSaved }: P
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-slate-600">Supplier</span>
-            <span className="text-sm font-medium text-slate-800">{payable.inv_suppliers?.name ?? '—'}</span>
+            <span className="text-sm font-medium text-slate-800">{payable.suppliers?.name ?? '—'}</span>
           </div>
           {payable.invoice_number && (
             <div className="flex items-center justify-between">

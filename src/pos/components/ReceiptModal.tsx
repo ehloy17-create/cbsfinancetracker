@@ -212,8 +212,9 @@ export default function ReceiptModal({ saleId, receiptNo, deviceTimestamp, onClo
                 </div>
               )}
               {showCustomerAddress && customerAddress && (
-                <div style={{ fontSize: '10px', marginTop: '2px', marginBottom: '2px' }}>
-                  <strong>Address:</strong> {customerAddress}
+                <div className="row">
+                  <span>Address:</span>
+                  <span style={{ textAlign: 'right', wordBreak: 'break-word', maxWidth: '60%' }}>{customerAddress}</span>
                 </div>
               )}
 
@@ -231,14 +232,8 @@ export default function ReceiptModal({ saleId, receiptNo, deviceTimestamp, onClo
                     <div className="item-name">{item.product_name_snapshot as string}</div>
                     {(() => {
                       const unitName = normalizeReceiptLabel(item.selected_unit_name ?? item.base_unit_name ?? 'Unit');
-                      const appliedLabel = normalizeReceiptLabel(item.price_source ?? item.applied_price_level);
-                      const showAppliedLabel = appliedLabel && !isRetailLabel(appliedLabel);
-                      const itemMeta = showAppliedLabel ? `${unitName} · ${appliedLabel}` : unitName;
-                      return <div className="header-meta">{itemMeta}</div>;
+                      return <div className="header-meta">{unitName}</div>;
                     })()}
-                    {String(item.pricing_breakdown ?? '').trim() && (
-                      <div className="header-meta">{String(item.pricing_breakdown)}</div>
-                    )}
                     {(() => {
                       const qty = Number(item.qty ?? 0);
                       const totalBaseQtyDeducted = Number(item.total_base_qty_deducted ?? 0);
@@ -249,14 +244,24 @@ export default function ReceiptModal({ saleId, receiptNo, deviceTimestamp, onClo
                           Math.abs(totalBaseQtyDeducted - qty) > 0.000001
                           || (baseUnitName && baseUnitName !== selectedUnitName)
                         );
+                      const itemDiscount = Number(item.discount_amount ?? 0);
                       return (
-                        <div className="item-columns">
-                          <span>
-                            Qty {formatQty(qty)}{showBaseQty ? ` (${formatQty(totalBaseQtyDeducted)} ${baseUnitName})` : ''}
-                          </span>
-                          <span>₱{formatSlipMoney(Number(item.unit_price))}</span>
-                          <span>₱{formatSlipMoney(Number(item.subtotal))}</span>
-                        </div>
+                        <>
+                          <div className="item-columns">
+                            <span>
+                              Qty {formatQty(qty)}{showBaseQty ? ` (${formatQty(totalBaseQtyDeducted)} ${baseUnitName})` : ''}
+                            </span>
+                            <span>₱{formatSlipMoney(Number(item.unit_price))}</span>
+                            <span>₱{formatSlipMoney(Number(item.subtotal))}</span>
+                          </div>
+                          {itemDiscount > 0 && (
+                            <div className="item-columns" style={{ color: '#666' }}>
+                              <span style={{ paddingLeft: '2mm' }}>Discount</span>
+                              <span></span>
+                              <span>-₱{formatSlipMoney(itemDiscount)}</span>
+                            </div>
+                          )}
+                        </>
                       );
                     })()}
                  </div>
@@ -273,12 +278,6 @@ export default function ReceiptModal({ saleId, receiptNo, deviceTimestamp, onClo
                 <span>Total Items</span>
                 <span>{Number.isInteger(totalItems) ? totalItems : totalItems.toFixed(2)}</span>
               </div>
-              {Number(sale.discount_amount) > 0 && (
-                <div className="row">
-                  <span>Discount</span>
-                   <span>-₱{formatSlipMoney(Number(sale.discount_amount))}</span>
-                </div>
-              )}
 
               <div className="divider" />
 

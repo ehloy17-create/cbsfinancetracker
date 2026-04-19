@@ -50,7 +50,7 @@ export default function PoStatusReportPage() {
     const purchaseOrderRows = (rows ?? []) as Array<Record<string, unknown>>;
     const supplierIds = Array.from(new Set(purchaseOrderRows.map((row) => String(row.supplier_id ?? '')).filter(Boolean)));
     const { data: suppliers } = supplierIds.length
-      ? await supabase.from('inv_suppliers').select('id, name').in('id', supplierIds)
+      ? await supabase.from('suppliers').select('id, name').in('id', supplierIds)
       : { data: [] as Array<{ id: string; name: string }> };
 
     const supplierMap = new Map(((suppliers ?? []) as Array<{ id: string; name: string }>).map((row) => [row.id, row.name]));

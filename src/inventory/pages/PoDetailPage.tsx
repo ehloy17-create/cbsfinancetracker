@@ -11,8 +11,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
-type PoFull = Omit<PurchaseOrder, 'inv_suppliers' | 'inv_locations' | 'creator' | 'approver'> & {
-  inv_suppliers: { id: string; name: string; code: string; contact_person: string; phone: string; address: string; city: string };
+type PoFull = Omit<PurchaseOrder, 'suppliers' | 'inv_locations' | 'creator' | 'approver'> & {
+  suppliers: { id: string; name: string; code: string; contact_person: string; phone: string; address: string; city: string };
   inv_locations: { id: string; name: string; code: string; address: string };
   creator: { name: string } | null;
   approver: { name: string } | null;
@@ -76,7 +76,7 @@ export default function PoDetailPage() {
     const profileIds = [...new Set([purchaseOrder.created_by, purchaseOrder.approved_by].filter(Boolean))] as string[];
 
     const [supplierRes, locationRes, productsRes, unitsRes, categoriesRes, profilesRes] = await Promise.all([
-      supabase.from('inv_suppliers').select('id, name, code, contact_person, phone, address, city').eq('id', purchaseOrder.supplier_id).maybeSingle(),
+      supabase.from('suppliers').select('id, name, code, contact_person, phone, address, city').eq('id', purchaseOrder.supplier_id).maybeSingle(),
       supabase.from('inv_locations').select('id, name, code, address').eq('id', purchaseOrder.location_id).maybeSingle(),
       productIds.length > 0
         ? supabase.from('inv_products').select('id, sku_code, name, unit_id, category_id').in('id', productIds)
@@ -119,7 +119,7 @@ export default function PoDetailPage() {
       tax_amount: 0,
       other_charges: 0,
       terms: '',
-      inv_suppliers: supplierRes.data ?? {
+      suppliers: supplierRes.data ?? {
         id: purchaseOrder.supplier_id,
         name: 'Unknown supplier',
         code: '',
@@ -284,10 +284,10 @@ export default function PoDetailPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-slate-100">
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Supplier</p>
-              <p className="text-sm font-semibold text-slate-800">{po.inv_suppliers.name}</p>
-              <p className="text-xs text-slate-400 font-mono">{po.inv_suppliers.code}</p>
-              {po.inv_suppliers.contact_person && <p className="text-xs text-slate-500 mt-0.5">{po.inv_suppliers.contact_person}</p>}
-              {po.inv_suppliers.phone && <p className="text-xs text-slate-500">{po.inv_suppliers.phone}</p>}
+              <p className="text-sm font-semibold text-slate-800">{po.suppliers.name}</p>
+              <p className="text-xs text-slate-400 font-mono">{po.suppliers.code}</p>
+              {po.suppliers.contact_person && <p className="text-xs text-slate-500 mt-0.5">{po.suppliers.contact_person}</p>}
+              {po.suppliers.phone && <p className="text-xs text-slate-500">{po.suppliers.phone}</p>}
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Deliver To</p>
@@ -449,10 +449,10 @@ export default function PoDetailPage() {
         <div className="grid grid-cols-2 gap-8 mb-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Supplier</p>
-            <p className="font-bold">{po.inv_suppliers.name}</p>
-            <p className="text-gray-600">{po.inv_suppliers.contact_person}</p>
-            <p className="text-gray-600">{po.inv_suppliers.phone}</p>
-            <p className="text-gray-600">{po.inv_suppliers.address}</p>
+            <p className="font-bold">{po.suppliers.name}</p>
+            <p className="text-gray-600">{po.suppliers.contact_person}</p>
+            <p className="text-gray-600">{po.suppliers.phone}</p>
+            <p className="text-gray-600">{po.suppliers.address}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Deliver To</p>

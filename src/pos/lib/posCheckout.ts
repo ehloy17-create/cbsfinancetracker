@@ -27,6 +27,7 @@ export interface CheckoutPayload {
   loyaltyPointsEarned?: number;
   loyaltyPointsRedeemed?: number;
   payments?: PaymentSplit[];
+  chargeAdvanceAmount?: number;
 }
 
 export interface CheckoutResult {
@@ -149,6 +150,7 @@ export async function postSale(payload: CheckoutPayload): Promise<CheckoutResult
       discount_pct: l.discountPct,
     })),
     customer_id: payload.customerId ?? null,
+    charge_advance_amount: payload.chargeAdvanceAmount ?? 0,
     payments: payload.payments?.map(payment => ({
       method: normalizeSalePaymentMethod(payment.method) ?? payment.method,
       amount: Number(payment.amount ?? 0),

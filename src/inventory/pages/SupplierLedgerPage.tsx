@@ -27,7 +27,7 @@ export default function SupplierLedgerPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    supabase.from('inv_suppliers').select('id, code, name').eq('is_active', true).order('name').then(({ data }) => {
+    supabase.from('suppliers').select('id, code, name').eq('is_active', true).order('name').then(({ data }) => {
       setSuppliers((data ?? []) as InvSupplierRow[]);
     });
   }, []);

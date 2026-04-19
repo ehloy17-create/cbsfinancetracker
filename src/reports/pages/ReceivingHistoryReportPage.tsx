@@ -50,7 +50,7 @@ export default function ReceivingHistoryReportPage() {
     const poIds = Array.from(new Set(receivingRows.map((row) => String(row.po_id ?? '')).filter(Boolean)));
 
     const [{ data: suppliers }, { data: locations }, { data: purchaseOrders }, { data: items }] = await Promise.all([
-      supplierIds.length ? supabase.from('inv_suppliers').select('id, name').in('id', supplierIds) : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
+      supplierIds.length ? supabase.from('suppliers').select('id, name').in('id', supplierIds) : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
       locationIds.length ? supabase.from('inv_locations').select('id, name').in('id', locationIds) : Promise.resolve({ data: [] as Array<{ id: string; name: string }> }),
       poIds.length ? supabase.from('purchase_orders').select('id, po_number').in('id', poIds) : Promise.resolve({ data: [] as Array<{ id: string; po_number: string }> }),
       receivingIds.length

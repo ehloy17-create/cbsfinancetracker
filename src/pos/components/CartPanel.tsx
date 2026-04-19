@@ -10,6 +10,8 @@ import QtyKeypad from './QtyKeypad';
 export interface CartPanelHandle {
   openQtyKeypad: (idx: number) => void;
   focusQtyButton: (idx: number) => void;
+  openDiscount: (idx: number) => void;
+  openPriceOverride: (idx: number) => void;
 }
 
 interface Props {
@@ -27,6 +29,7 @@ interface Props {
   onApplyDiscount: (idx: number, pct: number, fixed: number) => void;
   onOverridePrice: (idx: number, newPrice: number) => void;
   onQtyEditorClose?: () => void;
+  seniorDiscountEnabled?: boolean;
 }
 
 interface KeypadTarget {
@@ -45,29 +48,46 @@ function fmt(n: number) {
   return n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+type DiscountMode = 'pct' | 'fixed' | 'qty' | 'senior';
+
 function DiscountDialog({
-  line, maxPct, onConfirm, onClose,
+  line, maxPct, seniorEnabled, onConfirm, onClose,
 }: {
   line: CartLine;
   maxPct: number | null;
+  seniorEnabled?: boolean;
   onConfirm: (pct: number, fixed: number) => void;
   onClose: () => void;
 }) {
-  const [mode, setMode] = useState<'pct' | 'fixed'>('pct');
+  const [mode, setMode] = useState<DiscountMode>('qty');
   const [pctVal, setPctVal] = useState('');
   const [fixedVal, setFixedVal] = useState('');
 
   const lineTotal = line.qty * line.unitPrice;
-  const pctNum  = parseFloat(pctVal)  || 0;
+  const pctNum   = parseFloat(pctVal)   || 0;
   const fixedNum = parseFloat(fixedVal) || 0;
   const cappedPct = maxPct !== null ? Math.min(pctNum, maxPct) : pctNum;
-  const preview = mode === 'pct' ? (lineTotal * cappedPct / 100) : Math.min(fixedNum, lineTotal);
+
+  const preview =
+    mode === 'pct'    ? lineTotal * cappedPct / 100 :
+    mode === 'fixed'  ? Math.min(fixedNum, lineTotal) :
+    mode === 'qty'    ? Math.min(fixedNum * line.qty, lineTotal) :
+    /* senior */        lineTotal * 0.20;
 
   function handleConfirm() {
-    if (mode === 'pct') onConfirm(cappedPct, 0);
-    else onConfirm(0, preview);
+    if (mode === 'pct')    onConfirm(cappedPct, 0);
+    else if (mode === 'fixed') onConfirm(0, Math.min(fixedNum, lineTotal));
+    else if (mode === 'qty')   onConfirm(0, Math.min(fixedNum * line.qty, lineTotal));
+    else /* senior */          onConfirm(20, 0);
     onClose();
   }
+
+  const modes: { key: DiscountMode; label: string }[] = [
+    { key: 'qty',    label: 'Per Qty (₱)' },
+    { key: 'pct',    label: 'Percent (%)' },
+    { key: 'fixed',  label: 'Fixed (₱)'   },
+    ...(seniorEnabled ? [{ key: 'senior' as DiscountMode, label: 'Senior (20%)' }] : []),
+  ];
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
@@ -78,49 +98,65 @@ function DiscountDialog({
         </div>
         <div className="p-5 space-y-4">
           <p className="text-xs text-slate-400 truncate">{line.productName}</p>
-          <div className="flex gap-2">
-            {(['pct', 'fixed'] as const).map(m => (
+          <div className="flex gap-1.5 flex-wrap">
+            {modes.map(m => (
               <button
-                key={m}
-                onClick={() => setMode(m)}
-                className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors ${
-                  mode === m
+                key={m.key}
+                onClick={() => setMode(m.key)}
+                className={`flex-1 py-2 text-xs font-medium rounded-lg border transition-colors min-w-[5rem] ${
+                  mode === m.key
                     ? 'bg-amber-500 text-white border-amber-500'
                     : 'bg-slate-700 text-slate-400 border-slate-600 hover:border-slate-500'
                 }`}
               >
-                {m === 'pct' ? 'Percent (%)' : 'Fixed (₱)'}
+                {m.label}
               </button>
             ))}
           </div>
-          {mode === 'pct' ? (
+
+          {mode === 'pct' && (
             <div className="relative">
               <input
-                type="number" step="any"
-                min="0"
-                max={maxPct ?? 100}
-                value={pctVal}
-                onChange={e => setPctVal(e.target.value)}
-                placeholder="0"
-                autoFocus
+                type="number" step="any" min="0" max={maxPct ?? 100}
+                value={pctVal} onChange={e => setPctVal(e.target.value)}
+                placeholder="0" autoFocus
                 className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-white text-sm pr-8 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">%</span>
             </div>
-          ) : (
+          )}
+          {mode === 'fixed' && (
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₱</span>
               <input
-                type="number" step="any"
-                min="0"
-                value={fixedVal}
-                onChange={e => setFixedVal(e.target.value)}
-                placeholder="0.00"
-                autoFocus
+                type="number" step="any" min="0"
+                value={fixedVal} onChange={e => setFixedVal(e.target.value)}
+                placeholder="0.00" autoFocus
                 className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-white text-sm pl-7 focus:outline-none focus:ring-2 focus:ring-amber-500"
               />
             </div>
           )}
+          {mode === 'qty' && (
+            <div>
+              <p className="text-xs text-slate-500 mb-1.5">Amount per item (×{line.qty} qty)</p>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">₱</span>
+                <input
+                  type="number" step="any" min="0"
+                  value={fixedVal} onChange={e => setFixedVal(e.target.value)}
+                  placeholder="0.00" autoFocus
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-white text-sm pl-7 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+            </div>
+          )}
+          {mode === 'senior' && (
+            <div className="px-3 py-3 bg-slate-700/60 border border-slate-600 rounded-lg text-center">
+              <p className="text-sm text-slate-300">20% Senior Citizen Discount</p>
+              <p className="text-xs text-slate-500 mt-1">Applies 20% off the line total</p>
+            </div>
+          )}
+
           {maxPct !== null && mode === 'pct' && pctNum > maxPct && (
             <p className="text-xs text-amber-400 flex items-center gap-1">
               <AlertCircle className="w-3.5 h-3.5" />
@@ -128,9 +164,17 @@ function DiscountDialog({
             </p>
           )}
           {preview > 0 && (
-            <div className="flex items-center justify-between text-sm px-3 py-2.5 bg-amber-950/50 border border-amber-800/50 rounded-lg">
-              <span className="text-amber-300">Discount amount</span>
-              <span className="font-mono font-semibold text-amber-300">-₱{fmt(preview)}</span>
+            <div className="px-3 py-2.5 bg-amber-950/50 border border-amber-800/50 rounded-lg space-y-1">
+              {mode === 'qty' && fixedNum > 0 && (
+                <div className="flex items-center justify-between text-xs text-amber-400">
+                  <span>₱{fmt(fixedNum)} × {line.qty} items</span>
+                  <span>= ₱{fmt(Math.min(fixedNum * line.qty, lineTotal))}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-amber-300">Total discount</span>
+                <span className="font-mono font-semibold text-amber-300">-₱{fmt(preview)}</span>
+              </div>
             </div>
           )}
         </div>
@@ -228,6 +272,7 @@ const CartPanel = forwardRef<CartPanelHandle, Props>(function CartPanel({
   lines, totals, customerName, permissions, unitOptionsByProduct,
   selectedLineIdx, onSelectLine,
   onUpdateQty, onUpdateUnit, onRemoveLine, onVoidLine, onApplyDiscount, onOverridePrice, onQtyEditorClose,
+  seniorDiscountEnabled = false,
 }, ref) {
   const listRef = useRef<HTMLDivElement>(null);
   const qtyButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
@@ -261,6 +306,18 @@ const CartPanel = forwardRef<CartPanelHandle, Props>(function CartPanel({
   useImperativeHandle(ref, () => ({
     openQtyKeypad: (idx: number) => openKeypad(idx),
     focusQtyButton: (idx: number) => qtyButtonRefs.current[idx]?.focus(),
+    openDiscount: (idx: number) => {
+      const line = lines[idx];
+      if (!line || line.voided) return;
+      onSelectLine?.(idx);
+      setActiveDialog({ lineIdx: idx, type: 'discount' });
+    },
+    openPriceOverride: (idx: number) => {
+      const line = lines[idx];
+      if (!line || line.voided) return;
+      onSelectLine?.(idx);
+      setActiveDialog({ lineIdx: idx, type: 'price' });
+    },
   }));
 
   function handleKeypadConfirm(qty: number) {
@@ -537,6 +594,7 @@ const CartPanel = forwardRef<CartPanelHandle, Props>(function CartPanel({
         <DiscountDialog
           line={lines[activeDialog.lineIdx]}
           maxPct={discountRow?.max_discount_pct ?? null}
+          seniorEnabled={seniorDiscountEnabled}
           onConfirm={(pct, fixed) => { onApplyDiscount(activeDialog.lineIdx, pct, fixed); setExpandedLine(null); }}
           onClose={() => setActiveDialog(null)}
         />

@@ -10,6 +10,7 @@ import BackupRestorePage from './BackupRestorePage';
 import {
   getBooleanSystemState,
   POS_ALLOW_NEGATIVE_QTY_KEY,
+  POS_SENIOR_DISCOUNT_KEY,
   setBooleanSystemState,
 } from '../lib/systemState';
 import { PosShift, PosZReadingReset } from '../lib/types';
@@ -45,6 +46,7 @@ export default function SettingsPage() {
   const [newBeginningBalance, setNewBeginningBalance] = useState('0');
   const [deactivateTarget, setDeactivateTarget] = useState<GCashAccountSetting | null>(null);
   const [allowNegativeQty, setAllowNegativeQty] = useState(false);
+  const [seniorDiscountEnabled, setSeniorDiscountEnabled] = useState(false);
   const [lockedShifts, setLockedShifts] = useState<PosShift[]>([]);
   const [recentZResets, setRecentZResets] = useState<PosZReadingReset[]>([]);
   const [resetUserNames, setResetUserNames] = useState<Record<string, string>>({});
@@ -55,13 +57,14 @@ export default function SettingsPage() {
   const loadAccounts = useCallback(async () => {
     setLoading(true);
     try {
-      const [{ data, error }, allowNegativeQtyValue] = await Promise.all([
+      const [{ data, error }, allowNegativeQtyValue, seniorDiscountValue] = await Promise.all([
         supabase
           .from('accounts')
           .select('id, name, current_beginning_balance, current_running_balance, is_active')
           .eq('is_active', true)
           .order('name'),
         getBooleanSystemState(POS_ALLOW_NEGATIVE_QTY_KEY, false),
+        getBooleanSystemState(POS_SENIOR_DISCOUNT_KEY, false),
       ]);
 
       if (error) {
@@ -79,6 +82,7 @@ export default function SettingsPage() {
       }
       setBalances(nextBalances);
       setAllowNegativeQty(allowNegativeQtyValue);
+      setSeniorDiscountEnabled(seniorDiscountValue);
 
       if (profile?.role === 'admin') {
         const [{ data: shiftRows }, { data: resetRows }] = await Promise.all([
@@ -155,6 +159,7 @@ export default function SettingsPage() {
       }
 
       await setBooleanSystemState(POS_ALLOW_NEGATIVE_QTY_KEY, allowNegativeQty);
+      await setBooleanSystemState(POS_SENIOR_DISCOUNT_KEY, seniorDiscountEnabled);
 
       showToast('Settings updated', 'success');
       await loadAccounts();
@@ -386,6 +391,22 @@ export default function SettingsPage() {
                   <p className="text-sm font-medium text-slate-800">Allow tendering with negative qty</p>
                   <p className="mt-1 text-sm text-slate-500">
                     When enabled, POS can proceed to the tender screen and complete checkout even when stock goes below zero.
+                  </p>
+                </div>
+              </label>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={seniorDiscountEnabled}
+                  onChange={(e) => setSeniorDiscountEnabled(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <div>
+                  <p className="text-sm font-medium text-slate-800">Enable Senior Citizen Discount (20%)</p>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Shows a Senior Discount option in the POS discount dialog. Applies a 20% discount per line. Enable only for food & beverage businesses — not applicable for general retail.
                   </p>
                 </div>
               </label>

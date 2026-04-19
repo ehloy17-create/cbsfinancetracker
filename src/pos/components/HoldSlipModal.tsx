@@ -71,6 +71,7 @@ export default function HoldSlipModal({
     qty: Number(line.qty ?? 0),
     unitPrice: Number(line.unitPrice ?? 0),
     subtotal: Number(line.subtotal ?? 0),
+    discountAmount: Number(line.discountAmount ?? 0),
     selectedUnitName: line.selectedUnitName,
     baseUnitName: line.baseUnitName,
     pricingBreakdown: line.pricingBreakdown,

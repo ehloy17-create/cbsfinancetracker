@@ -21,7 +21,7 @@ type StatusFilter = 'open' | 'all' | PayablePaymentStatus;
 type SourceFilter = 'all' | 'manual' | 'receiving';
 
 type PayableRow = Payable & {
-  inv_suppliers?: Pick<InvSupplier, 'id' | 'name' | 'code'>;
+  suppliers?: Pick<InvSupplier, 'id' | 'name' | 'code'>;
   purchase_orders?: { id: string; po_number: string };
   receivings?: { id: string; receiving_number: string };
 };
@@ -66,7 +66,7 @@ export default function PayablesListPage() {
 
     const [payableRes, supplierRes] = await Promise.all([
       supabase.from('payables').select('*').order('created_at', { ascending: false }),
-      supabase.from('inv_suppliers').select('id, name, code').eq('is_active', true).order('name'),
+      supabase.from('suppliers').select('id, name, code').eq('is_active', true).order('name'),
     ]);
 
     const supplierRows = ((supplierRes.data ?? []) as Array<Pick<InvSupplier, 'id' | 'name' | 'code'>>);
@@ -94,7 +94,7 @@ export default function PayablesListPage() {
         const purchaseOrder = receiving?.po_id ? poMap.get(receiving.po_id) : undefined;
         return {
           ...payable,
-          inv_suppliers: supplierMap.get(payable.supplier_id) as Payable['inv_suppliers'],
+          suppliers: supplierMap.get(payable.supplier_id) as Payable['suppliers'],
           receivings: receiving ? { id: receiving.id, receiving_number: receiving.receiving_number } : undefined,
           purchase_orders: purchaseOrder ? { id: purchaseOrder.id, po_number: purchaseOrder.po_number } : undefined,
         };
@@ -131,7 +131,7 @@ export default function PayablesListPage() {
       return [
         payable.payable_number,
         payable.invoice_number,
-        payable.inv_suppliers?.name ?? '',
+        payable.suppliers?.name ?? '',
         payable.purchase_orders?.po_number ?? '',
         payable.receivings?.receiving_number ?? '',
       ].some((value) => String(value).toLowerCase().includes(searchTerm));
@@ -380,8 +380,8 @@ export default function PayablesListPage() {
                         <div className="font-mono text-xs text-slate-400">{payable.payable_number}</div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-slate-800">{payable.inv_suppliers?.name ?? 'Unknown supplier'}</div>
-                        <div className="font-mono text-xs text-slate-400">{payable.inv_suppliers?.code ?? ''}</div>
+                        <div className="font-medium text-slate-800">{payable.suppliers?.name ?? 'Unknown supplier'}</div>
+                        <div className="font-mono text-xs text-slate-400">{payable.suppliers?.code ?? ''}</div>
                       </td>
                       <td className="px-4 py-3 text-xs text-slate-600">
                         <div className="font-medium text-slate-700">{sourceLabel}</div>

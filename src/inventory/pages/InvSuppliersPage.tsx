@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Download } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { InvSupplier } from '../../lib/types';
 import { useAuth } from '../../contexts/AuthContext';
@@ -8,6 +8,7 @@ import InvPageHeader from '../components/InvPageHeader';
 import InvTable from '../components/InvTable';
 import InvModal from '../components/InvModal';
 import StatusBadge from '../components/StatusBadge';
+import { exportToCsv } from '../../reports/lib/csvExport';
 
 const PAGE_SIZE = 20;
 
@@ -82,6 +83,14 @@ export default function InvSuppliersPage() {
     fetch();
   }
 
+  function exportSuppliers() {
+    exportToCsv(
+      'suppliers.csv',
+      ['Code', 'Name', 'Contact Person', 'Phone', 'Email', 'City', 'Address', 'Terms', 'Status'],
+      rows.map(r => [r.code, r.name, r.contact_person, r.phone, r.email, r.city, r.address, r.terms, r.is_active ? 'Active' : 'Inactive'])
+    );
+  }
+
   const f = (key: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(prev => ({ ...prev, [key]: e.target.value }));
 
@@ -103,7 +112,24 @@ export default function InvSuppliersPage() {
 
   return (
     <div className="p-6">
-      <InvPageHeader title="Suppliers" subtitle="Manage inventory suppliers" search={search} onSearch={setSearch} onAdd={openAdd} addLabel="Add Supplier" />
+      <InvPageHeader
+        title="Suppliers"
+        subtitle="Manage inventory suppliers"
+        search={search}
+        onSearch={setSearch}
+        onAdd={openAdd}
+        addLabel="Add Supplier"
+        extra={
+          <button
+            onClick={exportSuppliers}
+            disabled={rows.length === 0}
+            className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+        }
+      />
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <InvTable columns={columns} data={rows} keyField="id" page={page} pageSize={PAGE_SIZE} total={total} onPageChange={setPage} loading={loading} emptyMessage="No suppliers found." />
       </div>

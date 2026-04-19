@@ -15,8 +15,8 @@ import { useToast } from '../../contexts/ToastContext';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import { writeAuditLog } from '../../lib/audit';
 
-type RecvFull = Omit<Receiving, 'inv_suppliers' | 'inv_locations' | 'purchase_orders' | 'creator' | 'poster'> & {
-  inv_suppliers: { id: string; name: string; code: string; contact_person: string; phone: string };
+type RecvFull = Omit<Receiving, 'suppliers' | 'inv_locations' | 'purchase_orders' | 'creator' | 'poster'> & {
+  suppliers: { id: string; name: string; code: string; contact_person: string; phone: string };
   inv_locations: { id: string; name: string; code: string };
   purchase_orders: { id: string; po_number: string; order_date: string };
   creator: { name: string } | null;
@@ -84,7 +84,7 @@ export default function ReceivingDetailPage() {
     const profileIds = [...new Set([receiving.created_by, receiving.posted_by].filter(Boolean))] as string[];
 
     const [supplierRes, locationRes, poRes, productsRes, unitsRes, profilesRes] = await Promise.all([
-      supabase.from('inv_suppliers').select('id, name, code, contact_person, phone').eq('id', receiving.supplier_id).maybeSingle(),
+      supabase.from('suppliers').select('id, name, code, contact_person, phone').eq('id', receiving.supplier_id).maybeSingle(),
       supabase.from('inv_locations').select('id, name, code').eq('id', receiving.location_id).maybeSingle(),
       supabase.from('purchase_orders').select('id, po_number, order_date').eq('id', receiving.po_id).maybeSingle(),
       productIds.length > 0
@@ -119,7 +119,7 @@ export default function ReceivingDetailPage() {
       ...receiving,
       admin_override: false,
       updated_by: null,
-      inv_suppliers: supplierRes.data ?? { id: receiving.supplier_id, name: 'Unknown supplier', code: '', contact_person: '', phone: '' },
+      suppliers: supplierRes.data ?? { id: receiving.supplier_id, name: 'Unknown supplier', code: '', contact_person: '', phone: '' },
       inv_locations: locationRes.data ?? { id: receiving.location_id, name: 'Unknown location', code: '' },
       purchase_orders: poRes.data ?? { id: receiving.po_id, po_number: '—', order_date: '' },
       creator: receiving.created_by ? { name: profileMap.get(receiving.created_by)?.name ?? '—' } : null,
@@ -318,9 +318,9 @@ export default function ReceivingDetailPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-4 border-t border-slate-100">
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Supplier</p>
-              <p className="text-sm font-semibold text-slate-800">{recv.inv_suppliers.name}</p>
-              <p className="text-xs text-slate-400 font-mono">{recv.inv_suppliers.code}</p>
-              {recv.inv_suppliers.contact_person && <p className="text-xs text-slate-500 mt-0.5">{recv.inv_suppliers.contact_person}</p>}
+              <p className="text-sm font-semibold text-slate-800">{recv.suppliers.name}</p>
+              <p className="text-xs text-slate-400 font-mono">{recv.suppliers.code}</p>
+              {recv.suppliers.contact_person && <p className="text-xs text-slate-500 mt-0.5">{recv.suppliers.contact_person}</p>}
             </div>
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Received At</p>
@@ -513,9 +513,9 @@ export default function ReceivingDetailPage() {
         <div className="grid grid-cols-2 gap-8 mb-6">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Supplier</p>
-            <p className="font-bold">{recv.inv_suppliers.name}</p>
-            <p className="text-gray-600">{recv.inv_suppliers.contact_person}</p>
-            <p className="text-gray-600">{recv.inv_suppliers.phone}</p>
+            <p className="font-bold">{recv.suppliers.name}</p>
+            <p className="text-gray-600">{recv.suppliers.contact_person}</p>
+            <p className="text-gray-600">{recv.suppliers.phone}</p>
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Received At</p>

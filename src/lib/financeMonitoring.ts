@@ -333,7 +333,7 @@ function normalizePayable(raw: RawRow): Payable {
     updated_by: raw.updated_by ? String(raw.updated_by) : null,
     created_at: String(raw.created_at ?? ''),
     updated_at: String(raw.updated_at ?? raw.created_at ?? ''),
-    inv_suppliers: raw.inv_suppliers as Payable['inv_suppliers'],
+    suppliers: raw.suppliers as Payable['suppliers'],
     purchase_orders: raw.purchase_orders as Payable['purchase_orders'],
     receivings: raw.receivings as Payable['receivings'],
     creator: raw.creator as Payable['creator'],

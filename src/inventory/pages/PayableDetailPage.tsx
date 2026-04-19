@@ -22,7 +22,7 @@ import { archiveOwnerLedgerEntriesByReference } from '../../lib/ownerLedger';
 import { getPayableSourceLabel, normalizePayable, normalizePayablePayment } from '../lib/payableData';
 
 type PayableDetailRow = Payable & {
-  inv_suppliers?: { id: string; name: string; code: string; contact_person?: string; phone?: string };
+  suppliers?: { id: string; name: string; code: string; contact_person?: string; phone?: string };
   receivings?: { id: string; receiving_number: string };
   purchase_orders?: { id: string; po_number: string };
   creator?: Profile | null;
@@ -75,7 +75,7 @@ export default function PayableDetailPage() {
     const checkIds = Array.from(new Set(normalizedPayments.map((payment) => payment.check_id).filter(Boolean))) as string[];
 
     const [supplierRes, receivingRes, profileRes, banksRes, checksRes] = await Promise.all([
-      supabase.from('inv_suppliers').select('id, name, code, contact_person, phone').eq('id', normalizedPayable.supplier_id).maybeSingle(),
+      supabase.from('suppliers').select('id, name, code, contact_person, phone').eq('id', normalizedPayable.supplier_id).maybeSingle(),
       normalizedPayable.receiving_id
         ? supabase.from('receivings').select('id, receiving_number, po_id').eq('id', normalizedPayable.receiving_id).maybeSingle()
         : Promise.resolve({ data: null }),
@@ -108,7 +108,7 @@ export default function PayableDetailPage() {
 
     setPayable({
       ...normalizedPayable,
-      inv_suppliers: supplierRes.data ?? undefined,
+      suppliers: supplierRes.data ?? undefined,
       receivings: receivingRes.data ? { id: receivingRes.data.id, receiving_number: receivingRes.data.receiving_number } : undefined,
       purchase_orders: poRes.data ? { id: poRes.data.id, po_number: poRes.data.po_number } : undefined,
       creator: normalizedPayable.created_by ? { id: normalizedPayable.created_by, name: profileMap.get(normalizedPayable.created_by)?.name ?? '—' } as Profile : undefined,
@@ -201,10 +201,10 @@ export default function PayableDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-slate-100">
             <div>
               <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Supplier</p>
-              <p className="text-sm font-semibold text-slate-800">{payable.inv_suppliers?.name ?? 'Unknown supplier'}</p>
-              <p className="text-xs text-slate-400 font-mono">{payable.inv_suppliers?.code ?? ''}</p>
-              {payable.inv_suppliers?.contact_person && <p className="text-xs text-slate-500 mt-0.5">{payable.inv_suppliers.contact_person}</p>}
-              {payable.inv_suppliers?.phone && <p className="text-xs text-slate-500">{payable.inv_suppliers.phone}</p>}
+              <p className="text-sm font-semibold text-slate-800">{payable.suppliers?.name ?? 'Unknown supplier'}</p>
+              <p className="text-xs text-slate-400 font-mono">{payable.suppliers?.code ?? ''}</p>
+              {payable.suppliers?.contact_person && <p className="text-xs text-slate-500 mt-0.5">{payable.suppliers.contact_person}</p>}
+              {payable.suppliers?.phone && <p className="text-xs text-slate-500">{payable.suppliers.phone}</p>}
             </div>
 
             <div>

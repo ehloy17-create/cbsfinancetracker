@@ -726,7 +726,7 @@ async function fetchLocationsMap(ids: string[]): Promise<Map<string, { name: str
 }
 
 async function fetchSuppliersMap(ids: string[]): Promise<Map<string, string>> {
-  const rows = await selectByIds<Record<string, unknown>>('inv_suppliers', 'id', ids, 'id, name');
+  const rows = await selectByIds<Record<string, unknown>>('suppliers', 'id', ids, 'id, name');
   return new Map(rows.map(row => [String(row.id ?? ''), String(row.name ?? '')]));
 }
 

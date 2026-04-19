@@ -1643,6 +1643,7 @@ router.post('/post_sale', requireAuth, async (req, res) => {
       customer_id = null,
       items = [],
       payments = [],
+      charge_advance_amount = 0,
     } = payload;
 
     // 1. Verify shift is open
@@ -1862,6 +1863,28 @@ router.post('/post_sale', requireAuth, async (req, res) => {
         notes: String(reference_no ?? '').trim() || `POS charge sale ${receiptNo}`,
         createdBy: cashier_id,
       });
+    }
+
+    const advanceAmt = roundCurrency(charge_advance_amount ?? 0);
+    if (advanceAmt > 0 && customer_id) {
+      const [custRows] = await conn.query(
+        'SELECT COALESCE(credit_balance, 0) AS credit_balance FROM pos_customers WHERE customer_id = ? LIMIT 1',
+        [customer_id]
+      );
+      const balBefore = roundCurrency(custRows[0]?.credit_balance ?? 0);
+      const balAfter = roundCurrency(balBefore - advanceAmt);
+      await conn.query(
+        'UPDATE pos_customers SET credit_balance = ? WHERE customer_id = ?',
+        [balAfter, customer_id]
+      );
+      await conn.query(
+        `INSERT INTO customer_credit_ledger
+           (id, customer_id, entry_type, amount, balance_before, balance_after, payment_method,
+            reference_number, sale_id, notes, created_by, created_at, updated_at)
+         VALUES (?, ?, 'advance_credit', ?, ?, ?, 'charge', ?, ?, ?, ?, NOW(), NOW())`,
+        [uuidv4(), customer_id, advanceAmt, balBefore, balAfter, receiptNo, saleId,
+          `Advance credit on charge overpayment — ${receiptNo}`, cashier_id]
+      );
     }
 
     await conn.commit();
@@ -2266,7 +2289,7 @@ router.post('/post_return', requireAuth, async (req, res) => {
            (id, return_id, original_sale_item_id, product_id, product_name_snapshot,
             sku_code, selected_unit_id, selected_unit_name, qty_returned,
             qty_in_base_unit_per_unit, total_base_qty_restored, base_unit_name, unit_price, subtotal)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           uuidv4(),
           returnId,
@@ -3051,14 +3074,15 @@ router.post('/post_pos_cash_pickup', requireAuth, async (req, res) => {
   const manualAmount = parseImportMoney(payload.p_amount ?? payload.amount ?? 0, 'amount');
   const conn = await pool.getConnection();
 
-  if (!shiftId) {
-    return res.status(400).json({ error: 'shift_id is required' });
-  }
-  if (!category) {
-    return res.status(400).json({ error: 'category is required' });
-  }
-  if (!reason) {
-    return res.status(400).json({ error: 'reason is required' });
+  if (!shiftId) return res.status(400).json({ error: 'shift_id is required' });
+  if (!category) return res.status(400).json({ error: 'category is required' });
+  if (!reason) return res.status(400).json({ error: 'reason is required' });
+
+  // Normalize a DATE/DATETIME value (JS Date object or string) to YYYY-MM-DD
+  function toDateStr(val) {
+    if (!val) return '';
+    if (val instanceof Date) return val.toISOString().slice(0, 10);
+    return String(val).slice(0, 10);
   }
 
   try {
@@ -3103,6 +3127,7 @@ router.post('/post_pos_cash_pickup', requireAuth, async (req, res) => {
 
       const transactionMap = new Map(transactionRows.map(row => [String(row.id ?? ''), row]));
       const pickedMap = new Map(existingLinkRows.map(row => [String(row.source_transaction_id ?? ''), roundCurrency(row.picked_amount)]));
+      const shiftDateStr = toDateStr(shift.business_date);
 
       amount = 0;
       for (const transactionId of deliveryTransactionIds) {
@@ -3111,7 +3136,7 @@ router.post('/post_pos_cash_pickup', requireAuth, async (req, res) => {
           await conn.rollback();
           return res.status(400).json({ error: 'One or more selected delivery fees are no longer available.' });
         }
-        if (String(transaction.date ?? '') !== shift.business_date) {
+        if (shiftDateStr && toDateStr(transaction.date) !== shiftDateStr) {
           await conn.rollback();
           return res.status(400).json({ error: 'Selected delivery fees must belong to the same business date as the shift.' });
         }
@@ -3130,11 +3155,6 @@ router.post('/post_pos_cash_pickup', requireAuth, async (req, res) => {
           linked_amount: outstanding,
         });
       }
-
-      if (manualAmount > 0 && roundCurrency(manualAmount) !== amount) {
-        await conn.rollback();
-        return res.status(400).json({ error: 'Delivery fee pickup amount no longer matches the selected outstanding delivery fees.' });
-      }
     }
 
     if (amount <= 0) {
@@ -3142,6 +3162,7 @@ router.post('/post_pos_cash_pickup', requireAuth, async (req, res) => {
       return res.status(400).json({ error: 'Pickup amount must be greater than zero.' });
     }
 
+    const businessDate = toDateStr(shift.business_date) || new Date().toISOString().slice(0, 10);
     const pickupId = uuidv4();
     await conn.query(
       `INSERT INTO pos_cash_pickups
@@ -3152,8 +3173,8 @@ router.post('/post_pos_cash_pickup', requireAuth, async (req, res) => {
         pickupId,
         shift.shift_id,
         shift.terminal_id,
-        shift.location_id,
-        shift.business_date,
+        shift.location_id ?? shift.terminal_id,
+        businessDate,
         pickupKind,
         pickupAt,
         amount,
@@ -3170,13 +3191,7 @@ router.post('/post_pos_cash_pickup', requireAuth, async (req, res) => {
         `INSERT INTO pos_cash_pickup_links
            (id, pickup_id, source_transaction_id, source_sale_id, linked_amount, created_at)
          VALUES (?, ?, ?, ?, ?, NOW())`,
-        [
-          linkRow.id,
-          pickupId,
-          linkRow.source_transaction_id,
-          linkRow.source_sale_id,
-          linkRow.linked_amount,
-        ]
+        [linkRow.id, pickupId, linkRow.source_transaction_id, linkRow.source_sale_id, linkRow.linked_amount]
       );
     }
 

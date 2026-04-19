@@ -3,33 +3,24 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, ClipboardList } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useToast } from '../../contexts/ToastContext';
-import { ADJUSTMENT_REASON_LABELS, formatDate, formatQty } from '../lib/adjustmentUtils';
+import { formatDate, formatQty } from '../lib/adjustmentUtils';
 
-interface AdjustmentRow {
+interface AdjRow {
   id: string;
-  adjustment_number: string;
-  adjustment_date: string;
-  reason: keyof typeof ADJUSTMENT_REASON_LABELS;
-  direction: 'add' | 'deduct';
-  remarks: string;
-  created_at: string;
-  inv_locations?: { name?: string; code?: string } | null;
-  creator?: { name?: string } | null;
+  adj_number: string;
+  adj_date: string;
+  adj_type: string;
+  reason: string;
+  location_id: string;
+  created_by: string | null;
 }
 
-interface AdjustmentItemRow {
+interface AdjItemRow {
   id: string;
   adjustment_id: string;
-  qty?: number;
-  notes?: string;
-  movement_id?: string | null;
-  inv_products?: { name?: string; sku_code?: string } | null;
-}
-
-interface MovementRow {
-  id: string;
+  product_id: string;
   qty_before: number;
-  qty_change: number;
+  qty_adjusted: number;
   qty_after: number;
 }
 
@@ -62,83 +53,77 @@ export default function AdjustmentDailySummaryPage() {
     try {
       let adjustmentsQuery = supabase
         .from('adjustments')
-        .select(`
-          id,
-          adjustment_number,
-          adjustment_date,
-          reason,
-          direction,
-          remarks,
-          created_at,
-          inv_locations(name, code),
-          creator:created_by(name)
-        `)
+        .select('id, adj_number, adj_date, adj_type, reason, location_id, created_by')
         .eq('status', 'posted')
-        .order('adjustment_date', { ascending: false })
+        .order('adj_date', { ascending: false })
         .order('created_at', { ascending: false });
 
-      if (dateFrom) adjustmentsQuery = adjustmentsQuery.gte('adjustment_date', dateFrom);
-      if (dateTo) adjustmentsQuery = adjustmentsQuery.lte('adjustment_date', dateTo);
+      if (dateFrom) adjustmentsQuery = adjustmentsQuery.gte('adj_date', dateFrom);
+      if (dateTo) adjustmentsQuery = adjustmentsQuery.lte('adj_date', dateTo);
 
       const { data: adjustmentRows, error: adjustmentError } = await adjustmentsQuery;
       if (adjustmentError) throw adjustmentError;
 
-      const adjustments = (adjustmentRows ?? []) as unknown as AdjustmentRow[];
+      const adjustments = (adjustmentRows ?? []) as AdjRow[];
       if (adjustments.length === 0) {
         setLines([]);
         setLoading(false);
         return;
       }
 
-      const adjustmentIds = adjustments.map(row => row.id);
-      const { data: itemRows, error: itemError } = await supabase
-        .from('adjustment_items')
-        .select('id, adjustment_id, qty, notes, movement_id, inv_products(name, sku_code)')
-        .in('adjustment_id', adjustmentIds)
-        .order('created_at', { ascending: false });
+      const adjustmentIds = adjustments.map(r => r.id);
+      const locationIds = [...new Set(adjustments.map(r => r.location_id).filter(Boolean))];
+      const userIds = [...new Set(adjustments.map(r => r.created_by).filter(Boolean))] as string[];
+
+      const [
+        { data: itemRows, error: itemError },
+        { data: locationRows },
+        { data: userRows },
+      ] = await Promise.all([
+        supabase.from('adjustment_items')
+          .select('id, adjustment_id, product_id, qty_before, qty_adjusted, qty_after')
+          .in('adjustment_id', adjustmentIds),
+        locationIds.length
+          ? supabase.from('inv_locations').select('id, name').in('id', locationIds)
+          : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+        userIds.length
+          ? supabase.from('profiles').select('id, name').in('id', userIds)
+          : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+      ]);
 
       if (itemError) throw itemError;
 
-      const items = (itemRows ?? []) as unknown as AdjustmentItemRow[];
-      const movementIds = items.map(item => item.movement_id).filter(Boolean) as string[];
+      const items = (itemRows ?? []) as AdjItemRow[];
+      const productIds = [...new Set(items.map(i => i.product_id).filter(Boolean))];
 
-      let movementMap = new Map<string, MovementRow>();
-      if (movementIds.length > 0) {
-        const { data: movementRows, error: movementError } = await supabase
-          .from('inventory_movements')
-          .select('id, qty_before, qty_change, qty_after')
-          .in('id', movementIds);
+      const { data: productRows } = productIds.length
+        ? await supabase.from('inv_products').select('id, name, sku_code').in('id', productIds)
+        : { data: [] as { id: string; name: string; sku_code: string }[] };
 
-        if (movementError) throw movementError;
+      const locationMap = new Map(((locationRows ?? []) as { id: string; name: string }[]).map(r => [r.id, r.name]));
+      const userMap = new Map(((userRows ?? []) as { id: string; name: string }[]).map(r => [r.id, r.name]));
+      const productMap = new Map(((productRows ?? []) as { id: string; name: string; sku_code: string }[]).map(r => [r.id, r]));
+      const adjustmentMap = new Map(adjustments.map(r => [r.id, r]));
 
-        movementMap = new Map(
-          ((movementRows ?? []) as MovementRow[]).map(row => [row.id, row])
-        );
-      }
-
-      const adjustmentMap = new Map(adjustments.map(row => [row.id, row]));
       const builtLines: SummaryLine[] = items.map(item => {
-        const adjustment = adjustmentMap.get(item.adjustment_id);
-        const movement = item.movement_id ? movementMap.get(item.movement_id) : undefined;
-        const fallbackChange = Number(item.qty ?? 0) * (adjustment?.direction === 'deduct' ? -1 : 1);
-        const qtyBefore = Number(movement?.qty_before ?? 0);
-        const qtyChange = Number(movement?.qty_change ?? fallbackChange);
-        const qtyAfter = Number(movement?.qty_after ?? (qtyBefore + qtyChange));
+        const adj = adjustmentMap.get(item.adjustment_id);
+        const product = productMap.get(item.product_id);
+        const qtyChange = Number(item.qty_adjusted ?? 0);
 
         return {
           id: item.id,
-          adjustmentId: adjustment?.id ?? '',
-          adjustmentNumber: adjustment?.adjustment_number ?? '—',
-          adjustmentDate: adjustment?.adjustment_date ?? '',
-          reasonLabel: ADJUSTMENT_REASON_LABELS[(adjustment?.reason ?? 'system_correction') as keyof typeof ADJUSTMENT_REASON_LABELS] ?? 'System Correction',
-          locationName: adjustment?.inv_locations?.name ?? '—',
-          createdBy: adjustment?.creator?.name ?? 'System',
-          productName: item.inv_products?.name ?? '—',
-          skuCode: item.inv_products?.sku_code ?? '',
-          qtyBefore,
+          adjustmentId: adj?.id ?? '',
+          adjustmentNumber: adj?.adj_number ?? '—',
+          adjustmentDate: adj?.adj_date ?? '',
+          reasonLabel: adj?.reason || adj?.adj_type?.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ') || '—',
+          locationName: locationMap.get(adj?.location_id ?? '') ?? '—',
+          createdBy: userMap.get(adj?.created_by ?? '') ?? 'System',
+          productName: product?.name ?? '—',
+          skuCode: product?.sku_code ?? '',
+          qtyBefore: Number(item.qty_before ?? 0),
           qtyChange,
-          qtyAfter,
-          remarks: adjustment?.remarks || item.notes || '—',
+          qtyAfter: Number(item.qty_after ?? 0),
+          remarks: adj?.reason || '—',
         };
       });
 

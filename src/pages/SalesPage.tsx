@@ -58,7 +58,7 @@ export default function SalesPage() {
 
   function openEdit(row: DailySales) {
     setForm({
-      date: row.date,
+      date: String(row.date ?? '').slice(0, 10),
       sales: String(row.sales ?? ''),
       cost_of_sales: String(row.cost_of_sales ?? ''),
       description: row.description ?? '',
@@ -215,7 +215,7 @@ export default function SalesPage() {
                 return (
                   <tr key={row.id} className="hover:bg-slate-50 transition-colors">
                     <td className="px-4 py-3 font-medium text-slate-800 whitespace-nowrap">
-                      {new Date(row.date + 'T00:00:00').toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      {new Date(String(row.date ?? '').slice(0, 10) + 'T00:00:00').toLocaleDateString('en-PH', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </td>
                     <td className="px-4 py-3 text-right font-mono text-slate-800">{fmt(salesAmt)}</td>
                     <td className="px-4 py-3 text-right font-mono text-red-600">{fmt(costAmt)}</td>

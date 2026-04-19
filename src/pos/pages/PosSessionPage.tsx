@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Monitor, User, MapPin, Calendar,
   LogOut, Banknote, ArrowLeft, XCircle, Pause, List,
-  Trash2, Receipt, Ban, RotateCcw, BarChart2, Keyboard, ArrowDownCircle, ArrowUpCircle, Clock, Users,
+  Trash2, Receipt, Ban, RotateCcw, BarChart2, Keyboard, ArrowDownCircle, ArrowUpCircle, Clock, Users, Tag, DollarSign,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { CustomerPriceLevel, PosShift, InvProduct, PosPermission, PosPermissionRow, PosCustomer } from '../../lib/types';
@@ -29,7 +29,7 @@ import XReadingModal from '../components/XReadingModal';
 import ZReadingModal from '../components/ZReadingModal';
 import RecentSalesModal from '../components/RecentSalesModal';
 import PosCustomerModal from '../components/PosCustomerModal';
-import { getBooleanSystemState, POS_ALLOW_NEGATIVE_QTY_KEY } from '../../lib/systemState';
+import { getBooleanSystemState, POS_ALLOW_NEGATIVE_QTY_KEY, POS_SENIOR_DISCOUNT_KEY } from '../../lib/systemState';
 import { normalizeCustomerPriceLevel } from '../lib/pricing';
 import { generateShortId } from '../../lib/utils';
 import { fetchProductUnitBundles, ProductUnitBundle, resolveSellingUnitPricing } from '../../lib/productUnits';
@@ -579,8 +579,17 @@ function PosSessionPage() {
       .catch(() => setAllowNegativeQty(false));
   }, []);
 
-  const canVoidTxn = profile?.role === 'admin' || permissions.has('void_transaction');
-  const canRefund  = profile?.role === 'admin' || permissions.has('refund');
+  const [seniorDiscountEnabled, setSeniorDiscountEnabled] = useState(false);
+  useEffect(() => {
+    getBooleanSystemState(POS_SENIOR_DISCOUNT_KEY, false)
+      .then(setSeniorDiscountEnabled)
+      .catch(() => setSeniorDiscountEnabled(false));
+  }, []);
+
+  const canVoidTxn       = profile?.role === 'admin' || permissions.has('void_transaction');
+  const canRefund        = profile?.role === 'admin' || permissions.has('refund');
+  const canDiscount      = profile?.role === 'admin' || permissions.has('discount');
+  const canPriceOverride = profile?.role === 'admin' || permissions.has('price_override');
 
   // Keep selection and edit-qty target aligned with the most recently affected line.
   useEffect(() => {
@@ -1084,6 +1093,7 @@ function PosSessionPage() {
                   onApplyDiscount={handleApplyDiscount}
                   onOverridePrice={handleOverridePrice}
                   onQtyEditorClose={() => searchInputRef.current?.focus()}
+                  seniorDiscountEnabled={seniorDiscountEnabled}
                 />
               </div>
             </div>
@@ -1093,12 +1103,12 @@ function PosSessionPage() {
         {/* MENU — 2-row × 6-column grid dock */}
         <div
           className="grid min-h-0 border-t border-slate-700 bg-slate-800 overflow-hidden"
-          style={{ flex: '0 0 25%', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gridTemplateRows: 'repeat(2, minmax(0, 1fr))' }}
+          style={{ flex: '0 0 25%', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))', gridTemplateRows: 'repeat(2, minmax(0, 1fr))' }}
         >
           <button
             disabled={shiftLocked || totals.activeLineCount === 0}
             onClick={() => !shiftLocked && setShowPayment(true)}
-            className="col-start-6 row-start-1 flex flex-col items-center justify-center gap-2 bg-blue-600 border-b border-blue-700 px-3 text-white transition-colors hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
+            className="col-start-7 row-start-1 flex flex-col items-center justify-center gap-2 bg-blue-600 border-b border-blue-700 px-3 text-white transition-colors hover:bg-blue-500 active:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <Banknote className="h-8 w-8" />
             <span className="text-center text-sm font-bold leading-tight">Tender Payment</span>
@@ -1108,11 +1118,29 @@ function PosSessionPage() {
           <button
             disabled={shiftLocked}
             onClick={() => !shiftLocked && setShowCashOut(true)}
-            className="col-start-6 row-start-2 flex flex-col items-center justify-center gap-2 bg-red-700/80 px-3 text-white transition-colors hover:bg-red-600 active:bg-red-800 disabled:cursor-not-allowed disabled:opacity-40"
+            className="col-start-7 row-start-2 flex flex-col items-center justify-center gap-2 bg-red-700/80 px-3 text-white transition-colors hover:bg-red-600 active:bg-red-800 disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ArrowUpCircle className="h-8 w-8" />
             <span className="text-center text-sm font-bold leading-tight">Cash Pickup</span>
             <span className="rounded bg-red-900/60 px-2 py-0.5 font-mono text-xs">F12</span>
+          </button>
+
+          <button
+            className="col-start-6 row-start-1 flex flex-col items-center justify-center gap-1.5 bg-slate-700/50 hover:bg-amber-950/40 active:bg-amber-950/70 text-amber-400 border-r border-b border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors px-2"
+            disabled={shiftLocked || !canDiscount || totals.activeLineCount === 0}
+            onClick={() => !shiftLocked && canDiscount && cartRef.current?.openDiscount(getQtyEditTargetIdx())}
+          >
+            <Tag className="w-7 h-7" />
+            <span className="text-sm font-semibold">Discount</span>
+          </button>
+
+          <button
+            className="col-start-6 row-start-2 flex flex-col items-center justify-center gap-1.5 bg-slate-700/50 hover:bg-blue-950/40 active:bg-blue-950/70 text-blue-400 border-r border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors px-2"
+            disabled={shiftLocked || !canPriceOverride || totals.activeLineCount === 0}
+            onClick={() => !shiftLocked && canPriceOverride && cartRef.current?.openPriceOverride(getQtyEditTargetIdx())}
+          >
+            <DollarSign className="w-7 h-7" />
+            <span className="text-sm font-semibold">Set Price</span>
           </button>
 
           {/* ── Row 1 ── */}

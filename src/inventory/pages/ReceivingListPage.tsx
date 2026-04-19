@@ -12,8 +12,8 @@ import { writeAuditLog } from '../../lib/audit';
 
 const PAGE_SIZE = 25;
 
-type RecvRow = Omit<Receiving, 'inv_suppliers' | 'inv_locations' | 'purchase_orders'> & {
-  inv_suppliers: { id: string; name: string; code: string };
+type RecvRow = Omit<Receiving, 'suppliers' | 'inv_locations' | 'purchase_orders'> & {
+  suppliers: { id: string; name: string; code: string };
   inv_locations: { id: string; name: string; code: string };
   purchase_orders: { po_number: string };
 };
@@ -53,7 +53,7 @@ export default function ReceivingListPage() {
   useEffect(() => {
     async function loadRefs() {
       const [sups, locs] = await Promise.all([
-        supabase.from('inv_suppliers').select('id, name, code').eq('is_active', true).order('name'),
+        supabase.from('suppliers').select('id, name, code').eq('is_active', true).order('name'),
         supabase.from('inv_locations').select('id, name, code').eq('is_active', true).order('name'),
       ]);
       setSuppliers(sups.data ?? []);
@@ -95,7 +95,7 @@ export default function ReceivingListPage() {
 
       const mappedRows: RecvRow[] = filteredRows.map((row) => ({
         ...row,
-        inv_suppliers: {
+        suppliers: {
           id: supplierMap.get(row.supplier_id)?.id ?? row.supplier_id,
           name: supplierMap.get(row.supplier_id)?.name ?? 'Unknown supplier',
           code: supplierMap.get(row.supplier_id)?.code ?? '',
@@ -183,8 +183,8 @@ export default function ReceivingListPage() {
       label: 'Supplier',
       render: (r: RecvRow) => (
         <div>
-          <p className="text-sm font-medium text-slate-800">{r.inv_suppliers.name}</p>
-          <p className="text-xs text-slate-400 font-mono">{r.inv_suppliers.code}</p>
+          <p className="text-sm font-medium text-slate-800">{r.suppliers.name}</p>
+          <p className="text-xs text-slate-400 font-mono">{r.suppliers.code}</p>
         </div>
       ),
     },

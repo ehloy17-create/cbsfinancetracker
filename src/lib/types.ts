@@ -226,10 +226,14 @@ export interface BankDeposit {
 
 export interface Supplier {
   id: string;
+  code: string;
   name: string;
   contact_person: string;
   phone: string;
+  email: string;
   address: string;
+  city: string;
+  terms: string;
   notes: string;
   is_active: boolean;
   created_by: string | null;
@@ -441,22 +445,7 @@ export interface InvUnit {
   updated_at: string;
 }
 
-export interface InvSupplier {
-  id: string;
-  code: string;
-  name: string;
-  contact_person: string;
-  phone: string;
-  email: string;
-  address: string;
-  city: string;
-  terms: string;
-  notes: string;
-  is_active: boolean;
-  created_by: string | null;
-  created_at: string;
-  updated_at: string;
-}
+export type InvSupplier = Supplier;
 
 export interface InvProduct {
   id: string;
@@ -494,7 +483,7 @@ export interface InvProduct {
   inv_categories?: InvCategory;
   inv_brands?: InvBrand;
   inv_units?: InvUnit;
-  inv_suppliers?: InvSupplier;
+  suppliers?: Supplier;
   inv_base_unit?: InvUnit;
   inv_default_purchase_unit?: InvUnit;
   inv_product_unit_conversions?: InvProductUnitConversion[];
@@ -630,7 +619,7 @@ export interface PurchaseOrder {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
-  inv_suppliers?: InvSupplier;
+  suppliers?: Supplier;
   inv_locations?: InvLocation;
   approver?: Profile;
   creator?: Profile;
@@ -678,7 +667,7 @@ export interface Receiving {
   created_at: string;
   updated_at: string;
   purchase_orders?: PurchaseOrder;
-  inv_suppliers?: InvSupplier;
+  suppliers?: Supplier;
   inv_locations?: InvLocation;
   poster?: Profile;
   creator?: Profile;
@@ -793,7 +782,7 @@ export interface Payable {
   updated_by: string | null;
   created_at: string;
   updated_at: string;
-  inv_suppliers?: InvSupplier;
+  suppliers?: Supplier;
   purchase_orders?: { id: string; po_number: string };
   receivings?: { id: string; receiving_number: string };
   creator?: Profile;

@@ -6,6 +6,7 @@ export interface HoldSlipPaperLine {
   qty: number;
   unitPrice: number;
   subtotal: number;
+  discountAmount?: number;
   selectedUnitName?: string;
   baseUnitName?: string;
   pricingBreakdown?: string;
@@ -92,6 +93,13 @@ export default function HoldSlipPaper({
               <span>₱{formatSlipMoney(Number(line.unitPrice ?? 0))}</span>
               <span>₱{formatSlipMoney(Number(line.subtotal ?? 0))}</span>
             </div>
+            {Number(line.discountAmount ?? 0) > 0 && (
+              <div className="item-columns" style={{ color: '#666' }}>
+                <span style={{ paddingLeft: '2mm' }}>Discount</span>
+                <span></span>
+                <span>-₱{formatSlipMoney(Number(line.discountAmount))}</span>
+              </div>
+            )}
           </div>
         );
       })}
