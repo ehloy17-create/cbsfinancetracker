@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Plus, Pencil, Trash2, Search, X, Save } from 'lucide-react';
+import { Truck, Plus, Pencil, Trash2, Search, X, Save, BookOpen } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Supplier } from '../lib/types';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { writeAuditLog } from '../lib/audit';
 import ConfirmDialog from '../components/ConfirmDialog';
+import SupplierLedgerModal from '../components/SupplierLedgerModal';
 
 const EMPTY_SUPPLIER = { name: '', contact_person: '', phone: '', address: '', notes: '' };
 
@@ -20,6 +21,7 @@ export default function SuppliersPage() {
   const [form, setForm] = useState(EMPTY_SUPPLIER);
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [ledgerSupplier, setLedgerSupplier] = useState<Supplier | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -133,7 +135,12 @@ export default function SuppliersPage() {
                   <Truck className="w-5 h-5 text-slate-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-slate-800">{s.name}</p>
+                  <button
+                    onClick={() => setLedgerSupplier(s)}
+                    className="text-sm font-semibold text-blue-700 hover:text-blue-900 hover:underline underline-offset-2 text-left transition-colors"
+                  >
+                    {s.name}
+                  </button>
                   <div className="flex items-center gap-3 mt-0.5 flex-wrap">
                     {s.contact_person && <p className="text-xs text-slate-500">{s.contact_person}</p>}
                     {s.phone && <p className="text-xs text-slate-400">{s.phone}</p>}
@@ -142,6 +149,13 @@ export default function SuppliersPage() {
                   {s.notes && <p className="text-xs text-slate-400 italic mt-0.5 truncate">{s.notes}</p>}
                 </div>
                 <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                  <button
+                    onClick={() => setLedgerSupplier(s)}
+                    className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                    title="View ledger"
+                  >
+                    <BookOpen className="w-4 h-4" />
+                  </button>
                   <button
                     onClick={() => openEdit(s)}
                     className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
@@ -160,6 +174,14 @@ export default function SuppliersPage() {
           </div>
         )}
       </div>
+
+      {/* Supplier Ledger Modal */}
+      {ledgerSupplier && (
+        <SupplierLedgerModal
+          supplier={ledgerSupplier}
+          onClose={() => setLedgerSupplier(null)}
+        />
+      )}
 
       {/* Form Modal */}
       {showForm && (
