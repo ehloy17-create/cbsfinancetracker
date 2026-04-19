@@ -5269,4 +5269,120 @@ Write-Output "OK"
   }
 });
 
+// ── POST /rpc/import_historical_records ──────────────────────────
+// Bulk import of old checks and expenses for P&L reporting only.
+// Records are inserted with affects_cashflow=false so they never
+// disturb running balances or outstanding check counts.
+// Checks are inserted as 'cleared' + a matching disbursement.
+// Expenses are inserted as disbursements only.
+router.post('/import_historical_records', requireAuth, async (req, res) => {
+  const { type, rows } = req.body;
+  const userId = req.user?.id ?? null;
+
+  if (!['checks', 'expenses'].includes(type)) {
+    return res.status(400).json({ error: "type must be 'checks' or 'expenses'" });
+  }
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return res.status(400).json({ error: 'rows must be a non-empty array' });
+  }
+  if (rows.length > 500) {
+    return res.status(400).json({ error: 'Maximum 500 rows per import' });
+  }
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    let imported = 0;
+    const errors = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 1;
+
+      try {
+        const date = String(row.date ?? '').trim();
+        const amount = parseFloat(String(row.amount ?? '0').replace(/,/g, ''));
+        const payee = String(row.payee ?? row.supplier_name ?? '').trim() || 'Unknown';
+        const description = String(row.description ?? row.purpose ?? '').trim();
+
+        if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+          errors.push(`Row ${rowNum}: invalid or missing date (expected YYYY-MM-DD)`);
+          continue;
+        }
+        if (isNaN(amount) || amount <= 0) {
+          errors.push(`Row ${rowNum}: invalid or missing amount`);
+          continue;
+        }
+
+        const disbId = uuidv4();
+        const now = new Date().toISOString();
+
+        if (type === 'checks') {
+          const checkNumber = String(row.check_number ?? '').trim();
+          const checkDate = String(row.check_date ?? date).trim();
+
+          if (!checkNumber) {
+            errors.push(`Row ${rowNum}: check_number is required`);
+            continue;
+          }
+
+          // Insert into checks_issued as cleared (historical, no cashflow)
+          const checkId = uuidv4();
+          await conn.query(
+            `INSERT INTO checks_issued
+               (id, check_number, bank_account_id, supplier_id, issued_date, check_date,
+                cleared_date, amount, payee, description, notes, status,
+                manually_set_status, disbursement_id, is_deleted, created_by, created_at, updated_at)
+             VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, 'cleared', 1, ?, 0, ?, ?, ?)`,
+            [checkId, checkNumber, date, checkDate, date, amount,
+             payee, description, 'Historical import', disbId, userId, now, now]
+          );
+
+          // Matching disbursement — affects_cashflow=false
+          await conn.query(
+            `INSERT INTO disbursements
+               (id, date, payee, purpose, amount, payment_method, disbursement_type,
+                check_id, check_number, affects_cashflow, is_deleted,
+                description, notes, source_module, source_reference_id, created_by, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, 'check', 'historical_import',
+                     ?, ?, 0, 0, ?, 'Historical check import', 'historical_import', ?, ?, ?, ?)`,
+            [disbId, date, payee, description || 'Historical check', amount,
+             checkId, checkNumber, description, checkId, userId, now, now]
+          );
+        } else {
+          // Expense only — disbursement with affects_cashflow=false
+          await conn.query(
+            `INSERT INTO disbursements
+               (id, date, payee, purpose, amount, payment_method, disbursement_type,
+                affects_cashflow, is_deleted,
+                description, notes, source_module, source_reference_id, created_by, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, 'cash', 'historical_import',
+                     0, 0, ?, 'Historical expense import', 'historical_import', ?, ?, ?, ?)`,
+            [disbId, date, payee, description || 'Historical expense', amount,
+             description, disbId, userId, now, now]
+          );
+        }
+
+        imported++;
+      } catch (rowErr) {
+        errors.push(`Row ${rowNum}: ${rowErr.message}`);
+      }
+    }
+
+    if (imported === 0 && errors.length > 0) {
+      await conn.rollback();
+      return res.status(422).json({ success: false, imported: 0, errors });
+    }
+
+    await conn.commit();
+    return res.json({ success: true, imported, errors });
+  } catch (err) {
+    await conn.rollback();
+    return res.status(500).json({ error: err.message });
+  } finally {
+    conn.release();
+  }
+});
+
 export default router;

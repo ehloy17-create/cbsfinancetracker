@@ -18,6 +18,7 @@ import CashLedgerPage from './pages/CashLedgerPage';
 import ChecksPage from './pages/ChecksPage';
 import DisbursementsPage from './pages/DisbursementsPage';
 import SuppliersPage from './pages/SuppliersPage';
+import HistoricalImportPage from './pages/HistoricalImportPage';
 import FinanceSupplierLedgerPage from './pages/FinanceSupplierLedgerPage';
 import SalesPage from './pages/SalesPage';
 import SalesAnalyticsPage from './pages/SalesAnalyticsPage';
@@ -160,6 +161,7 @@ function PrivateRoutes() {
         <Route path="/checks" element={<RoleRoute allowedRoles={['admin']}><ChecksPage /></RoleRoute>} />
         <Route path="/disbursements" element={<RoleRoute allowedRoles={['admin']}><DisbursementsPage /></RoleRoute>} />
         <Route path="/suppliers" element={<RoleRoute allowedRoles={['admin']}><SuppliersPage /></RoleRoute>} />
+        <Route path="/historical-import" element={<RoleRoute allowedRoles={['admin']}><HistoricalImportPage /></RoleRoute>} />
         <Route path="/supplier-ledger" element={<RoleRoute allowedRoles={['admin']}><FinanceSupplierLedgerPage /></RoleRoute>} />
         <Route path="/settings" element={<RoleRoute allowedRoles={['admin']}><SettingsPage /></RoleRoute>} />
         <Route path="/settings/company" element={<Navigate to="/settings?tab=global" replace />} />

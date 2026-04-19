@@ -51,6 +51,7 @@ const ADMIN_ONLY_EXACT_PATHS = [
   '/disbursements',
   '/suppliers',
   '/supplier-ledger',
+  '/historical-import',
   '/settings',
   '/users',
   '/audit-logs',

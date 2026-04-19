@@ -120,6 +120,7 @@ const navGroups: NavGroup[] = [
       { to: '/bank-reconciliations', icon: BookOpen, label: 'Reconciliation' },
       { to: '/checks', icon: FileText, label: 'Checks Issued' },
       { to: '/disbursements', icon: CreditCard, label: 'Disbursements' },
+      { to: '/historical-import', icon: Upload, label: 'Historical Import' },
       {
         label: 'Payroll',
         icon: UserCheck,
