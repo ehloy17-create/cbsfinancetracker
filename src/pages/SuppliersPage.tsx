@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Truck, Plus, Pencil, Trash2, Search, X, Save, BookOpen } from 'lucide-react';
+import { Truck, Plus, Pencil, Trash2, Search, X, Save, BookOpen, Download } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Supplier } from '../lib/types';
 import { useAuth } from '../contexts/AuthContext';
@@ -7,6 +7,7 @@ import { useToast } from '../contexts/ToastContext';
 import { writeAuditLog } from '../lib/audit';
 import ConfirmDialog from '../components/ConfirmDialog';
 import SupplierLedgerModal from '../components/SupplierLedgerModal';
+import { exportToCsv } from '../reports/lib/csvExport';
 
 const EMPTY_SUPPLIER = { name: '', contact_person: '', phone: '', address: '', notes: '' };
 
@@ -83,6 +84,14 @@ export default function SuppliersPage() {
     s.contact_person.toLowerCase().includes(search.toLowerCase())
   );
 
+  function exportSuppliers() {
+    exportToCsv(
+      'suppliers.csv',
+      ['Name', 'Contact Person', 'Phone', 'Address', 'Notes'],
+      filtered.map(s => [s.name, s.contact_person, s.phone, s.address, s.notes])
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -98,13 +107,23 @@ export default function SuppliersPage() {
           <h1 className="text-2xl font-bold text-slate-800">Suppliers</h1>
           <p className="text-slate-500 text-sm mt-0.5">Manage check recipients and payees</p>
         </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Add Supplier
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportSuppliers}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-2 px-4 py-2 border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+          >
+            <Download className="w-4 h-4" />
+            Export CSV
+          </button>
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm"
+          >
+            <Plus className="w-4 h-4" />
+            Add Supplier
+          </button>
+        </div>
       </div>
 
       {/* Search */}
