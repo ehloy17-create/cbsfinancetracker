@@ -14,13 +14,13 @@ services:
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        value: 3306
+        sync: false
       - key: DB_USER
         sync: false
       - key: DB_PASSWORD
         sync: false
       - key: DB_NAME
-        value: gcash_pos
+        sync: false
       - key: JWT_SECRET
         sync: false
       - key: APP_PUBLIC_BASE_URL

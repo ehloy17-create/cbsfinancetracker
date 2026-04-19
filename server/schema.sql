@@ -1,1698 +1,2394 @@
--- ============================================================
--- MySQL Schema - Converted from Supabase/PostgreSQL migrations
--- Run this once against your local MySQL database:
---   mysql -u root -p your_db_name < server/schema.sql
--- ============================================================
-
+-- BizTracker MySQL Schema
+-- Compatible with MySQL 8.0+ and MySQL 9.x
 SET FOREIGN_KEY_CHECKS = 0;
+SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci';
 
--- -------------------------------------------------------
--- profiles (replaces Supabase auth.users extension)
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS profiles (
-  id          CHAR(36)     PRIMARY KEY,
-  name        VARCHAR(255) NOT NULL DEFAULT '',
-  email       VARCHAR(255) NOT NULL DEFAULT '',
-  password_hash VARCHAR(255) NOT NULL DEFAULT '',
-  role        VARCHAR(20)  NOT NULL DEFAULT 'staff' CHECK (role IN ('admin','staff','cashier')),
-  status      VARCHAR(20)  NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive')),
-  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  last_login  DATETIME     NULL
-);
+-- MySQL dump 10.13  Distrib 8.0.45, for Win64 (x86_64)
+--
+-- Host: localhost    Database: gcash_pos
+-- ------------------------------------------------------
+-- Server version	8.0.45
 
--- -------------------------------------------------------
--- accounts (GCash accounts)
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS accounts (
-  id                          CHAR(36)        PRIMARY KEY DEFAULT (UUID()),
-  name                        VARCHAR(255)    NOT NULL,
-  is_active                   TINYINT(1)      NOT NULL DEFAULT 1,
-  current_beginning_balance   DECIMAL(12,2)   NOT NULL DEFAULT 0,
-  current_running_balance     DECIMAL(12,2)   NOT NULL DEFAULT 0,
-  last_closed_date            DATE            NULL,
-  created_at                  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at                  DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
--- -------------------------------------------------------
--- transactions
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS transactions (
-  id                  CHAR(36)        PRIMARY KEY DEFAULT (UUID()),
-  account_id          CHAR(36)        NOT NULL,
-  transaction_type    VARCHAR(20)     NOT NULL CHECK (transaction_type IN ('cash_in','cash_out')),
-  transaction_category VARCHAR(30)    NOT NULL DEFAULT 'regular',
-  cash_in_mode        VARCHAR(20)     NULL,
-  amount              DECIMAL(12,2)   NOT NULL,
-  transaction_fee     DECIMAL(12,2)   NOT NULL DEFAULT 0,
-  amount_received     DECIMAL(12,2)   NULL,
-  fee_type            VARCHAR(20)     NOT NULL DEFAULT 'gcash' CHECK (fee_type IN ('gcash','cash')),
-  delivery_fee        DECIMAL(12,2)   NOT NULL DEFAULT 0,
-  cash_balance        DECIMAL(12,2)   NOT NULL DEFAULT 0,
-  date                DATE            NOT NULL,
-  description         TEXT            NOT NULL,
-  reference_number    VARCHAR(255)    NOT NULL DEFAULT '',
-  source              VARCHAR(50)     NOT NULL DEFAULT 'gcash' CHECK (source IN ('gcash','cash')),
-  notes               TEXT            NULL,
-  cash_source         VARCHAR(50)     NULL,
-  cash_out_type       VARCHAR(50)     NULL,
-  bank_account_id     CHAR(36)        NULL,
-  source_module       VARCHAR(60)     NULL,
-  source_reference_id CHAR(36)        NULL,
-  source_sale_id      CHAR(36)        NULL,
-  reversal_of_transaction_id CHAR(36) NULL,
-  disbursement_id     CHAR(36)        NULL,
-  is_deleted          TINYINT(1)      NOT NULL DEFAULT 0,
-  is_closed           TINYINT(1)      NOT NULL DEFAULT 0,
-  cleared_at          DATETIME        NULL,
-  source_pos_remittance_id CHAR(36)   NULL,
-  created_by          CHAR(36)        NULL,
-  created_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at          DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT
-);
+--
+-- Table structure for table `accounts`
+--
 
--- -------------------------------------------------------
--- daily_history
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS daily_history (
-  id                    CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  account_id            CHAR(36)      NOT NULL,
-  date                  DATE          NOT NULL,
-  beginning_balance     DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_cash_in         DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_cash_out        DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_transaction_fee DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_cash_fees       DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_delivery_fee    DECIMAL(12,2) NOT NULL DEFAULT 0,
-  transaction_count     INT           NOT NULL DEFAULT 0,
-  ending_balance        DECIMAL(12,2) NOT NULL DEFAULT 0,
-  posted_by             CHAR(36)      NULL,
-  shift_cash_in         DECIMAL(12,2) NOT NULL DEFAULT 0,
-  shift_cash_out        DECIMAL(12,2) NOT NULL DEFAULT 0,
-  created_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_daily_history (account_id, date),
-  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE RESTRICT
-);
+DROP TABLE IF EXISTS `accounts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `accounts` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `name` varchar(255) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `current_beginning_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `current_running_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `last_closed_date` date DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- -------------------------------------------------------
--- system_state
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS system_state (
-  setting_key         VARCHAR(255) PRIMARY KEY,
-  value       TEXT         NOT NULL,
-  updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+--
+-- Table structure for table `adjustment_items`
+--
 
--- -------------------------------------------------------
--- audit_logs
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS audit_logs (
-  id          CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  user_id     CHAR(36)     NULL,
-  action      VARCHAR(255) NOT NULL,
-  module      VARCHAR(255) NOT NULL DEFAULT '',
-  table_name  VARCHAR(255) NOT NULL DEFAULT '',
-  record_id   VARCHAR(255) NOT NULL DEFAULT '',
-  changes     JSON         NULL,
-  details     JSON         NULL,
-  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
+DROP TABLE IF EXISTS `adjustment_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `adjustment_items` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `adjustment_id` char(36) NOT NULL,
+  `product_id` char(36) NOT NULL,
+  `qty_before` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `qty_adjusted` decimal(12,3) NOT NULL,
+  `qty_after` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `reason` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `adjustment_id` (`adjustment_id`),
+  KEY `product_id` (`product_id`),
+  CONSTRAINT `adjustment_items_ibfk_1` FOREIGN KEY (`adjustment_id`) REFERENCES `adjustments` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `adjustment_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- -------------------------------------------------------
--- cash_transactions
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS cash_transactions (
-  id              CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  transaction_type VARCHAR(20)  NOT NULL CHECK (transaction_type IN ('beginning_balance','bank_deposit','cash_fund_disbursement','pos_remittance','cash_in','cash_out')),
-  transaction_category VARCHAR(30) NOT NULL DEFAULT 'regular',
-  amount          DECIMAL(12,2) NOT NULL,
-  date            DATE          NOT NULL,
-  description     TEXT          NOT NULL,
-  notes           TEXT          NULL,
-  reference_number VARCHAR(255) NOT NULL DEFAULT '',
-  cash_out_type   VARCHAR(50)   NULL,
-  source_module   VARCHAR(60)   NULL,
-  source_reference_id CHAR(36)  NULL,
-  disbursement_id CHAR(36)      NULL,
-  source_pos_remittance_id CHAR(36) NULL,
-  is_deleted      TINYINT(1)    NOT NULL DEFAULT 0,
-  is_closed       TINYINT(1)    NOT NULL DEFAULT 0,
-  cleared_at      DATETIME      NULL,
-  created_by      CHAR(36)      NULL,
-  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+--
+-- Table structure for table `adjustments`
+--
 
--- -------------------------------------------------------
--- bank_accounts
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS bank_accounts (
-  id              CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  name            VARCHAR(255)  NOT NULL,
-  bank_name       VARCHAR(255)  NOT NULL DEFAULT '',
-  account_number  VARCHAR(255)  NOT NULL DEFAULT '',
-  current_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
-  is_active       TINYINT(1)    NOT NULL DEFAULT 1,
-  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+DROP TABLE IF EXISTS `adjustments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `adjustments` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `adj_number` varchar(50) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `adj_type` varchar(30) NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'draft',
+  `adj_date` date NOT NULL DEFAULT (curdate()),
+  `reason` text NOT NULL,
+  `posted_by` char(36) DEFAULT NULL,
+  `posted_at` datetime DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `adj_number` (`adj_number`),
+  KEY `location_id` (`location_id`),
+  CONSTRAINT `adjustments_ibfk_1` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `adjustments_chk_1` CHECK ((`adj_type` in (_cp850'addition',_cp850'deduction',_cp850'write_off',_cp850'correction'))),
+  CONSTRAINT `adjustments_chk_2` CHECK ((`status` in (_cp850'draft',_cp850'posted',_cp850'cancelled')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- -------------------------------------------------------
--- bank_deposits
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS bank_deposits (
-  id                   CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  bank_account_id      CHAR(36)      NOT NULL,
-  amount               DECIMAL(12,2) NOT NULL,
-  date                 DATE          NOT NULL,
-  description          TEXT          NOT NULL,
-  reference_number     VARCHAR(255)  NOT NULL DEFAULT '',
-  source_description   VARCHAR(255)  NOT NULL DEFAULT '',
-  source_transaction_id CHAR(36)     NULL,
-  created_by           CHAR(36)      NULL,
-  created_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE RESTRICT
-);
+--
+-- Table structure for table `audit_logs`
+--
 
--- -------------------------------------------------------
--- bank_transactions
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS bank_transactions (
-  id                    CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  bank_account_id       CHAR(36)      NOT NULL,
-  transaction_type      VARCHAR(30)   NOT NULL,
-  amount                DECIMAL(12,2) NOT NULL,
-  date                  DATE          NOT NULL,
-  description           TEXT          NOT NULL,
-  reference_number      VARCHAR(255)  NOT NULL DEFAULT '',
-  source_transaction_id CHAR(36)      NULL,
-  check_id              CHAR(36)      NULL,
-  disbursement_id       CHAR(36)      NULL,
-  is_deleted            TINYINT(1)    NOT NULL DEFAULT 0,
-  created_by            CHAR(36)      NULL,
-  created_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- suppliers (GCash module)
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS suppliers (
-  id          CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  name        VARCHAR(255) NOT NULL,
-  contact     VARCHAR(255) NOT NULL DEFAULT '',
-  address     TEXT         NOT NULL,
-  is_active   TINYINT(1)   NOT NULL DEFAULT 1,
-  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- checks_issued
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS checks_issued (
-  id                  CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  bank_account_id     CHAR(36)      NOT NULL,
-  supplier_id         CHAR(36)      NULL,
-  payable_id          CHAR(36)      NULL,
-  check_number        VARCHAR(100)  NOT NULL,
-  check_date          DATE          NOT NULL,
-  issued_date         DATE          NULL,
-  date                DATE          NULL,
-  amount              DECIMAL(12,2) NOT NULL,
-  payee               VARCHAR(255)  NOT NULL DEFAULT '',
-  description         TEXT          NOT NULL DEFAULT '',
-  notes               TEXT          NOT NULL DEFAULT '',
-  status              VARCHAR(30)   NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','cleared','cancelled','stale')),
-  cleared_date        DATE          NULL,
-  disbursement_id     CHAR(36)      NULL,
-  manually_set_status TINYINT(1)    NOT NULL DEFAULT 0,
-  attachment_reference VARCHAR(255) NULL,
-  approval_required   TINYINT(1)    NOT NULL DEFAULT 0,
-  approval_status     VARCHAR(20)   NOT NULL DEFAULT 'approved',
-  approved_by         CHAR(36)      NULL,
-  approved_at         DATETIME      NULL,
-  rejected_reason     TEXT          NULL,
-  is_deleted          TINYINT(1)    NOT NULL DEFAULT 0,
-  created_by          CHAR(36)      NULL,
-  created_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (bank_account_id) REFERENCES bank_accounts(id) ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- disbursements
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS disbursements (
-  id                CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  supplier_id       CHAR(36)      NULL,
-  owner_id          CHAR(36)      NULL,
-  date              DATE          NOT NULL,
-  payee             VARCHAR(255)  NOT NULL DEFAULT '',
-  purpose           TEXT          NOT NULL DEFAULT '',
-  amount            DECIMAL(12,2) NOT NULL,
-  payment_method    VARCHAR(50)   NOT NULL DEFAULT 'cash',
-  check_id          CHAR(36)      NULL,
-  owner_ledger_id   CHAR(36)      NULL,
-  check_number      VARCHAR(100)  NOT NULL DEFAULT '',
-  description       TEXT          NOT NULL DEFAULT '',
-  reference_number  VARCHAR(255)  NOT NULL DEFAULT '',
-  disbursement_type VARCHAR(50)   NOT NULL DEFAULT 'cash',
-  source_module     VARCHAR(60)   NULL,
-  source_reference_id CHAR(36)    NULL,
-  source_account_type VARCHAR(30) NULL,
-  source_account_id CHAR(36)      NULL,
-  notes             TEXT          NOT NULL DEFAULT '',
-  is_deleted        TINYINT(1)    NOT NULL DEFAULT 0,
-  created_by        CHAR(36)      NULL,
-  created_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- daily_sales
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS daily_sales (
-  id              CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  date            DATE          NOT NULL UNIQUE,
-  -- Manual P&L entry fields
-  sales           DECIMAL(12,2) NOT NULL DEFAULT 0,
-  cost_of_sales   DECIMAL(12,2) NOT NULL DEFAULT 0,
-  description     TEXT          NOT NULL DEFAULT '',
-  -- POS auto-sync fields (populated by sync_daily_sales_from_pos RPC on Z-close)
-  total_pos_sales DECIMAL(12,2) NOT NULL DEFAULT 0,
-  cash_pos_sales  DECIMAL(12,2) NOT NULL DEFAULT 0,
-  gcash_pos_sales DECIMAL(12,2) NOT NULL DEFAULT 0,
-  card_pos_sales  DECIMAL(12,2) NOT NULL DEFAULT 0,
-  pos_synced_at   DATETIME      NULL,
-  notes           TEXT          NOT NULL DEFAULT '',
-  is_deleted      TINYINT(1)    NOT NULL DEFAULT 0,
-  created_by      CHAR(36)      NULL,
-  created_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at      DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- cash_daily_history
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS cash_daily_history (
-  id                    CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  date                  DATE          NOT NULL UNIQUE,
-  beginning_balance     DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_cash_in         DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_cash_out        DECIMAL(12,2) NOT NULL DEFAULT 0,
-  transaction_count     INT           NOT NULL DEFAULT 0,
-  cash_fees_collected   DECIMAL(12,2) NOT NULL DEFAULT 0,
-  cash_given_out        DECIMAL(12,2) NOT NULL DEFAULT 0,
-  cash_out_to_fund      DECIMAL(12,2) NOT NULL DEFAULT 0,
-  bank_deposits         DECIMAL(12,2) NOT NULL DEFAULT 0,
-  cash_fund_disbursements DECIMAL(12,2) NOT NULL DEFAULT 0,
-  ending_balance        DECIMAL(12,2) NOT NULL DEFAULT 0,
-  posted_by             CHAR(36)      NULL,
-  posted_at             DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- cashier_remittances
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS cashier_remittances (
-  id                  CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  cashier_id          CHAR(36)      NOT NULL,
-  shift_id            CHAR(36)      NULL,
-  date                DATE          NOT NULL,
-  source_type         VARCHAR(30)   NOT NULL DEFAULT 'gcash',
-  source_account_id   CHAR(36)      NULL,
-  destination_type    VARCHAR(30)   NOT NULL DEFAULT 'bank',
-  destination_bank_id CHAR(36)      NULL,
-  amount              DECIMAL(12,2) NOT NULL,
-  bank_fee            DECIMAL(12,2) NOT NULL DEFAULT 0,
-  description         TEXT          NOT NULL DEFAULT '',
-  notes               TEXT          NOT NULL DEFAULT '',
-  status              VARCHAR(30)   NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','confirmed','cancelled')),
-  confirmed_by        CHAR(36)      NULL,
-  confirmed_at        DATETIME      NULL,
-  is_deleted          TINYINT(1)    NOT NULL DEFAULT 0,
-  created_by          CHAR(36)      NULL,
-  created_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- inv_roles
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inv_roles (
-  id           CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  name         VARCHAR(100) NOT NULL UNIQUE,
-  display_name VARCHAR(255) NOT NULL,
-  description  TEXT         NOT NULL,
-  permissions  JSON         NOT NULL,
-  is_active    TINYINT(1)   NOT NULL DEFAULT 1,
-  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- inv_locations
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inv_locations (
-  id           CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  code         VARCHAR(50)  NOT NULL UNIQUE,
-  name         VARCHAR(255) NOT NULL,
-  address      TEXT         NOT NULL,
-  city         VARCHAR(255) NOT NULL DEFAULT '',
-  phone        VARCHAR(50)  NOT NULL DEFAULT '',
-  manager_name VARCHAR(255) NOT NULL DEFAULT '',
-  is_active    TINYINT(1)   NOT NULL DEFAULT 1,
-  created_by   CHAR(36)     NULL,
-  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- inv_categories
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inv_categories (
-  id          CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  code        VARCHAR(50)  NOT NULL UNIQUE,
-  name        VARCHAR(255) NOT NULL,
-  parent_id   CHAR(36)     NULL,
-  description TEXT         NOT NULL,
-  is_active   TINYINT(1)   NOT NULL DEFAULT 1,
-  sort_order  INT          NOT NULL DEFAULT 0,
-  created_by  CHAR(36)     NULL,
-  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (parent_id) REFERENCES inv_categories(id) ON DELETE SET NULL
-);
-
--- -------------------------------------------------------
--- inv_brands
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inv_brands (
-  id          CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  name        VARCHAR(255) NOT NULL UNIQUE,
-  description TEXT         NOT NULL,
-  is_active   TINYINT(1)   NOT NULL DEFAULT 1,
-  created_by  CHAR(36)     NULL,
-  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- inv_units
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inv_units (
-  id           CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  code         VARCHAR(20)  NOT NULL UNIQUE,
-  name         VARCHAR(100) NOT NULL,
-  abbreviation VARCHAR(20)  NOT NULL DEFAULT '',
-  short_name   VARCHAR(20)  NOT NULL DEFAULT '',
-  description  TEXT         NULL,
-  is_active    TINYINT(1)   NOT NULL DEFAULT 1,
-  created_by   CHAR(36)     NULL,
-  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- inv_suppliers
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inv_suppliers (
-  id             CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  code           VARCHAR(50)  NOT NULL UNIQUE,
-  name           VARCHAR(255) NOT NULL,
-  contact_person VARCHAR(255) NOT NULL DEFAULT '',
-  phone          VARCHAR(50)  NOT NULL DEFAULT '',
-  email          VARCHAR(255) NOT NULL DEFAULT '',
-  address        TEXT         NOT NULL,
-  payment_terms  VARCHAR(100) NOT NULL DEFAULT '',
-  is_active      TINYINT(1)   NOT NULL DEFAULT 1,
-  created_by     CHAR(36)     NULL,
-  created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- inv_products
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inv_products (
-  id               CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  sku_code         VARCHAR(100)  NOT NULL UNIQUE,
-  barcode          VARCHAR(100)  NOT NULL DEFAULT '',
-  barcode2         VARCHAR(100)  NOT NULL DEFAULT '',
-  name             VARCHAR(255)  NOT NULL,
-  description      TEXT          NOT NULL,
-  category_id      CHAR(36)      NULL,
-  brand_id         CHAR(36)      NULL,
-  unit_id          CHAR(36)      NULL,
-  supplier_id      CHAR(36)      NULL,
-  cost_price       DECIMAL(12,2) NOT NULL DEFAULT 0,
-  retail_price     DECIMAL(12,2) NOT NULL DEFAULT 0,
-  wholesale_price  DECIMAL(12,2) NOT NULL DEFAULT 0,
-  special_price    DECIMAL(12,2) NOT NULL DEFAULT 0,
-  selling_price    DECIMAL(12,2) NOT NULL DEFAULT 0,
-  reorder_point    DECIMAL(12,3) NOT NULL DEFAULT 0,
-  is_expiry_tracked TINYINT(1)   NOT NULL DEFAULT 0,
-  near_expiry_days  INT          NOT NULL DEFAULT 90,
-  is_active        TINYINT(1)    NOT NULL DEFAULT 1,
-  created_by       CHAR(36)      NULL,
-  created_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (category_id) REFERENCES inv_categories(id) ON DELETE SET NULL,
-  FOREIGN KEY (brand_id)    REFERENCES inv_brands(id)     ON DELETE SET NULL,
-  FOREIGN KEY (unit_id)     REFERENCES inv_units(id)      ON DELETE SET NULL,
-  FOREIGN KEY (supplier_id) REFERENCES inv_suppliers(id)  ON DELETE SET NULL
-);
-
-CREATE TABLE IF NOT EXISTS inv_product_pricing_history (
-  id                   CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  product_id           CHAR(36)      NOT NULL,
-  old_cost             DECIMAL(12,2) NULL,
-  new_cost             DECIMAL(12,2) NULL,
-  old_retail_price     DECIMAL(12,2) NULL,
-  new_retail_price     DECIMAL(12,2) NULL,
-  old_wholesale_price  DECIMAL(12,2) NULL,
-  new_wholesale_price  DECIMAL(12,2) NULL,
-  old_special_price    DECIMAL(12,2) NULL,
-  new_special_price    DECIMAL(12,2) NULL,
-  changed_by           CHAR(36)      NULL,
-  changed_by_name      VARCHAR(255)  NOT NULL DEFAULT '',
-  changed_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (product_id) REFERENCES inv_products(id) ON DELETE CASCADE
-);
-
--- -------------------------------------------------------
--- inventory_balances
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inventory_balances (
-  id               CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  product_id       CHAR(36)      NOT NULL,
-  location_id      CHAR(36)      NOT NULL,
-  qty_on_hand      DECIMAL(12,3) NOT NULL DEFAULT 0,
-  qty_available    DECIMAL(12,3) NOT NULL DEFAULT 0,
-  last_movement_at DATETIME      NULL,
-  updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_inv_balance (product_id, location_id),
-  FOREIGN KEY (product_id)  REFERENCES inv_products(id)  ON DELETE RESTRICT,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id) ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- inventory_movements
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inventory_movements (
-  id            CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  product_id    CHAR(36)      NOT NULL,
-  location_id   CHAR(36)      NOT NULL,
-  movement_type VARCHAR(50)   NOT NULL,
-  qty_change    DECIMAL(12,3) NOT NULL,
-  qty_after     DECIMAL(12,3) NOT NULL DEFAULT 0,
-  ref_number    VARCHAR(255)  NOT NULL DEFAULT '',
-  ref_id        CHAR(36)      NULL,
-  notes         TEXT          NOT NULL,
-  created_by    CHAR(36)      NULL,
-  created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (product_id)  REFERENCES inv_products(id)  ON DELETE RESTRICT,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id) ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- purchase_orders
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS purchase_orders (
-  id            CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  po_number     VARCHAR(50)   NOT NULL UNIQUE,
-  supplier_id   CHAR(36)      NOT NULL,
-  location_id   CHAR(36)      NOT NULL,
-  status        VARCHAR(30)   NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','submitted','approved','partially_received','fully_received','cancelled')),
-  order_date    DATE          NOT NULL DEFAULT (CURRENT_DATE),
-  expected_date DATE          NULL,
-  notes         TEXT          NOT NULL,
-  total_amount  DECIMAL(12,6) NOT NULL DEFAULT 0,
-  approved_by   CHAR(36)      NULL,
-  approved_at   DATETIME      NULL,
-  created_by    CHAR(36)      NULL,
-  created_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (supplier_id)  REFERENCES inv_suppliers(id)  ON DELETE RESTRICT,
-  FOREIGN KEY (location_id)  REFERENCES inv_locations(id)  ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- purchase_order_items
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS purchase_order_items (
-  id           CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  po_id        CHAR(36)      NOT NULL,
-  product_id   CHAR(36)      NOT NULL,
-  qty_ordered  DECIMAL(12,3) NOT NULL,
-  qty_received DECIMAL(12,3) NOT NULL DEFAULT 0,
-  unit_cost    DECIMAL(12,6) NOT NULL DEFAULT 0,
-  subtotal     DECIMAL(12,6) NOT NULL DEFAULT 0,
-  notes        TEXT          NOT NULL,
-  FOREIGN KEY (po_id)       REFERENCES purchase_orders(id) ON DELETE CASCADE,
-  FOREIGN KEY (product_id)  REFERENCES inv_products(id)    ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- receivings
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS receivings (
-  id               CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  receiving_number VARCHAR(50)  NOT NULL UNIQUE DEFAULT '',
-  po_id            CHAR(36)     NOT NULL,
-  supplier_id      CHAR(36)     NOT NULL,
-  location_id      CHAR(36)     NOT NULL,
-  status           VARCHAR(20)  NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','posted','cancelled')),
-  receiving_date   DATE         NOT NULL DEFAULT (CURRENT_DATE),
-  invoice_number   VARCHAR(100) NOT NULL DEFAULT '',
-  dr_number        VARCHAR(100) NOT NULL DEFAULT '',
-  remarks          TEXT         NOT NULL,
-  posted_by        CHAR(36)     NULL,
-  posted_at        DATETIME     NULL,
-  created_by       CHAR(36)     NULL,
-  created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (po_id)       REFERENCES purchase_orders(id) ON DELETE RESTRICT,
-  FOREIGN KEY (supplier_id) REFERENCES inv_suppliers(id)   ON DELETE RESTRICT,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id)   ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- receiving_items
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS receiving_items (
-  id               CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  receiving_id     CHAR(36)      NOT NULL,
-  po_item_id       CHAR(36)      NULL,
-  product_id       CHAR(36)      NOT NULL,
-  qty_received     DECIMAL(12,3) NOT NULL,
-  qty_rejected     DECIMAL(12,3) NOT NULL DEFAULT 0,
-  unit_cost        DECIMAL(12,2) NOT NULL DEFAULT 0,
-  expiry_date      DATE          NULL,
-  batch_number     VARCHAR(100)  NOT NULL DEFAULT '',
-  FOREIGN KEY (receiving_id) REFERENCES receivings(id)           ON DELETE CASCADE,
-  FOREIGN KEY (po_item_id)   REFERENCES purchase_order_items(id) ON DELETE SET NULL,
-  FOREIGN KEY (product_id)   REFERENCES inv_products(id)         ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- product_lots
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS product_lots (
-  id                   CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  product_id           CHAR(36)      NOT NULL,
-  location_id          CHAR(36)      NOT NULL,
-  receiving_item_id    CHAR(36)      NULL,
-  batch_number         VARCHAR(100)  NOT NULL DEFAULT '',
-  expiry_date          DATE          NULL,
-  qty_on_hand          DECIMAL(12,3) NOT NULL DEFAULT 0,
-  created_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (product_id)        REFERENCES inv_products(id)   ON DELETE RESTRICT,
-  FOREIGN KEY (location_id)       REFERENCES inv_locations(id)  ON DELETE RESTRICT,
-  FOREIGN KEY (receiving_item_id) REFERENCES receiving_items(id) ON DELETE SET NULL
-);
-
--- -------------------------------------------------------
--- payables
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS payables (
-  id             CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  payable_number VARCHAR(50)   NOT NULL UNIQUE,
-  supplier_id    CHAR(36)      NOT NULL,
-  receiving_id   CHAR(36)      NULL,
-  invoice_number VARCHAR(100)  NOT NULL DEFAULT '',
-  amount         DECIMAL(12,2) NOT NULL,
-  balance        DECIMAL(12,2) NOT NULL,
-  due_date       DATE          NULL,
-  status         VARCHAR(30)   NOT NULL DEFAULT 'open' CHECK (status IN ('open','partial','paid','cancelled')),
-  notes          TEXT          NOT NULL,
-  created_by     CHAR(36)      NULL,
-  created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (supplier_id) REFERENCES inv_suppliers(id) ON DELETE RESTRICT,
-  FOREIGN KEY (receiving_id) REFERENCES receivings(id)   ON DELETE SET NULL
-);
-
--- -------------------------------------------------------
--- payable_payments
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS payable_payments (
-  id             CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  payable_id     CHAR(36)      NOT NULL,
-  amount         DECIMAL(12,2) NOT NULL,
-  payment_date   DATE          NOT NULL DEFAULT (CURRENT_DATE),
-  payment_method VARCHAR(50)   NOT NULL DEFAULT 'cash',
-  reference_no   VARCHAR(100)  NOT NULL DEFAULT '',
-  notes          TEXT          NOT NULL,
-  owner_id       CHAR(36)      NULL,
-  owner_ledger_id CHAR(36)     NULL,
-  created_by     CHAR(36)      NULL,
-  created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (payable_id) REFERENCES payables(id) ON DELETE CASCADE
-);
-
--- -------------------------------------------------------
--- stock_transfers
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS stock_transfers (
-  id                      CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  transfer_number         VARCHAR(50)  NOT NULL UNIQUE,
-  source_location_id      CHAR(36)     NOT NULL,
-  destination_location_id CHAR(36)     NOT NULL,
-  status                  VARCHAR(30)  NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','approved','issued','partially_received','fully_received','cancelled')),
-  transfer_date           DATE         NOT NULL DEFAULT (CURRENT_DATE),
-  expected_date           DATE         NULL,
-  notes                   TEXT         NOT NULL,
-  approved_by             CHAR(36)     NULL,
-  approved_at             DATETIME     NULL,
-  issued_by               CHAR(36)     NULL,
-  issued_at               DATETIME     NULL,
-  created_by              CHAR(36)     NULL,
-  updated_by              CHAR(36)     NULL,
-  created_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at              DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (source_location_id)      REFERENCES inv_locations(id) ON DELETE RESTRICT,
-  FOREIGN KEY (destination_location_id) REFERENCES inv_locations(id) ON DELETE RESTRICT,
-  CHECK (source_location_id <> destination_location_id)
-);
-
--- -------------------------------------------------------
--- stock_transfer_items
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS stock_transfer_items (
-  id            CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  transfer_id   CHAR(36)      NOT NULL,
-  product_id    CHAR(36)      NOT NULL,
-  qty_requested DECIMAL(12,3) NOT NULL,
-  qty_issued    DECIMAL(12,3) NOT NULL DEFAULT 0,
-  qty_received  DECIMAL(12,3) NOT NULL DEFAULT 0,
-  notes         TEXT          NOT NULL,
-  FOREIGN KEY (transfer_id) REFERENCES stock_transfers(id) ON DELETE CASCADE,
-  FOREIGN KEY (product_id)  REFERENCES inv_products(id)    ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- adjustments
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS adjustments (
-  id               CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  adj_number       VARCHAR(50)  NOT NULL UNIQUE,
-  location_id      CHAR(36)     NOT NULL,
-  adj_type         VARCHAR(30)  NOT NULL CHECK (adj_type IN ('addition','deduction','write_off','correction')),
-  status           VARCHAR(20)  NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','posted','cancelled')),
-  adj_date         DATE         NOT NULL DEFAULT (CURRENT_DATE),
-  reason           TEXT         NOT NULL,
-  posted_by        CHAR(36)     NULL,
-  posted_at        DATETIME     NULL,
-  created_by       CHAR(36)     NULL,
-  created_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at       DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id) ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- adjustment_items
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS adjustment_items (
-  id             CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  adjustment_id  CHAR(36)      NOT NULL,
-  product_id     CHAR(36)      NOT NULL,
-  qty_before     DECIMAL(12,3) NOT NULL DEFAULT 0,
-  qty_adjusted   DECIMAL(12,3) NOT NULL,
-  qty_after      DECIMAL(12,3) NOT NULL DEFAULT 0,
-  reason         TEXT          NOT NULL,
-  FOREIGN KEY (adjustment_id) REFERENCES adjustments(id)   ON DELETE CASCADE,
-  FOREIGN KEY (product_id)    REFERENCES inv_products(id)  ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- physical_counts
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS physical_counts (
-  id            CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  pc_number     VARCHAR(50)  NOT NULL UNIQUE,
-  location_id   CHAR(36)     NOT NULL,
-  status        VARCHAR(20)  NOT NULL DEFAULT 'open' CHECK (status IN ('open','posted','cancelled')),
-  count_date    DATE         NOT NULL DEFAULT (CURRENT_DATE),
-  notes         TEXT         NOT NULL,
-  posted_by     CHAR(36)     NULL,
-  posted_at     DATETIME     NULL,
-  created_by    CHAR(36)     NULL,
-  created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id) ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- physical_count_items
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS physical_count_items (
-  id              CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  physical_count_id CHAR(36)    NOT NULL,
-  product_id      CHAR(36)      NOT NULL,
-  qty_system      DECIMAL(12,3) NOT NULL DEFAULT 0,
-  qty_counted     DECIMAL(12,3) NOT NULL DEFAULT 0,
-  qty_variance    DECIMAL(12,3) GENERATED ALWAYS AS (qty_counted - qty_system) STORED,
-  notes           TEXT          NOT NULL,
-  FOREIGN KEY (physical_count_id) REFERENCES physical_counts(id) ON DELETE CASCADE,
-  FOREIGN KEY (product_id)        REFERENCES inv_products(id)    ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- pos_terminals
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS pos_terminals (
-  terminal_id   CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  terminal_code VARCHAR(20)  NOT NULL UNIQUE,
-  terminal_name VARCHAR(100) NOT NULL,
-  location_id   CHAR(36)     NOT NULL,
-  is_active     TINYINT(1)   NOT NULL DEFAULT 1,
-  created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id) ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- pos_shifts
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS pos_shifts (
-  shift_id        CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  terminal_id     CHAR(36)      NOT NULL,
-  cashier_id      CHAR(36)      NOT NULL,
-  location_id     CHAR(36)      NOT NULL,
-  shift_date      DATE          NOT NULL,
-  business_date   DATE          NULL,
-  status          VARCHAR(10)   NOT NULL DEFAULT 'open' CHECK (status IN ('open','closed')),
-  opening_cash    DECIMAL(12,2) NOT NULL DEFAULT 0,
-  notes           TEXT          NULL,
-  expected_cash   DECIMAL(12,2) NOT NULL DEFAULT 0,
-  actual_cash     DECIMAL(12,2) NOT NULL DEFAULT 0,
-  over_short      DECIMAL(12,2) NOT NULL DEFAULT 0,
-  opened_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  closed_at       DATETIME      NULL,
-  closed_by       CHAR(36)      NULL,
-  z_reading_posted_at DATETIME  NULL,
-  z_reading_posted_by CHAR(36)  NULL,
-  z_reading_reset_at  DATETIME  NULL,
-  z_reading_reset_by  CHAR(36)  NULL,
-  z_reading_reset_reason TEXT   NULL,
-  UNIQUE KEY uq_open_shift (cashier_id, terminal_id, status, shift_date),
-  FOREIGN KEY (terminal_id) REFERENCES pos_terminals(terminal_id) ON DELETE RESTRICT,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id)          ON DELETE RESTRICT
-);
-
-CREATE TABLE IF NOT EXISTS pos_recent_items (
-  id            CHAR(36)    PRIMARY KEY DEFAULT (UUID()),
-  terminal_id   CHAR(36)    NOT NULL,
-  location_id   CHAR(36)    NULL,
-  product_id    CHAR(36)    NOT NULL,
-  last_used_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  use_count     INT         NOT NULL DEFAULT 1,
-  created_at    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_pos_recent_items_terminal_product (terminal_id, product_id),
-  KEY idx_pos_recent_items_terminal_last_used (terminal_id, last_used_at),
-  KEY idx_pos_recent_items_product (product_id)
-);
-
-CREATE TABLE IF NOT EXISTS pos_zreading_resets (
-  id            CHAR(36)    PRIMARY KEY DEFAULT (UUID()),
-  shift_id      CHAR(36)    NOT NULL,
-  terminal_id   CHAR(36)    NOT NULL,
-  location_id   CHAR(36)    NOT NULL,
-  business_date DATE        NOT NULL,
-  reset_by      CHAR(36)    NOT NULL,
-  reason        TEXT        NOT NULL,
-  reset_at      DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  created_at    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  KEY idx_pos_zreading_resets_shift (shift_id),
-  KEY idx_pos_zreading_resets_date (business_date),
-  KEY idx_pos_zreading_resets_reset_at (reset_at),
-  FOREIGN KEY (shift_id) REFERENCES pos_shifts(shift_id) ON DELETE RESTRICT,
-  FOREIGN KEY (terminal_id) REFERENCES pos_terminals(terminal_id) ON DELETE RESTRICT,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id) ON DELETE RESTRICT
-);
-
-CREATE TABLE IF NOT EXISTS pos_cash_pickups (
-  id                CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  shift_id          CHAR(36)      NOT NULL,
-  terminal_id       CHAR(36)      NOT NULL,
-  location_id       CHAR(36)      NOT NULL,
-  business_date     DATE          NOT NULL,
-  pickup_kind       VARCHAR(30)   NOT NULL DEFAULT 'general',
-  pickup_at         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  amount            DECIMAL(12,2) NOT NULL DEFAULT 0,
-  reason            VARCHAR(255)  NOT NULL DEFAULT '',
-  category          VARCHAR(80)   NOT NULL DEFAULT '',
-  related_reference VARCHAR(120)  NOT NULL DEFAULT '',
-  notes             TEXT          NOT NULL,
-  created_by        CHAR(36)      NULL,
-  is_deleted        TINYINT(1)    NOT NULL DEFAULT 0,
-  created_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  KEY idx_pos_cash_pickups_shift (shift_id),
-  KEY idx_pos_cash_pickups_terminal_date (terminal_id, business_date),
-  KEY idx_pos_cash_pickups_pickup_at (pickup_at),
-  FOREIGN KEY (shift_id) REFERENCES pos_shifts(shift_id) ON DELETE RESTRICT,
-  FOREIGN KEY (terminal_id) REFERENCES pos_terminals(terminal_id) ON DELETE RESTRICT,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id) ON DELETE RESTRICT
-);
-
-CREATE TABLE IF NOT EXISTS pos_cash_pickup_links (
-  id                    CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  pickup_id             CHAR(36)      NOT NULL,
-  source_transaction_id CHAR(36)      NOT NULL,
-  source_sale_id        CHAR(36)      NULL,
-  linked_amount         DECIMAL(12,2) NOT NULL DEFAULT 0,
-  created_at            DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  KEY idx_pos_cash_pickup_links_pickup (pickup_id),
-  KEY idx_pos_cash_pickup_links_txn (source_transaction_id),
-  FOREIGN KEY (pickup_id) REFERENCES pos_cash_pickups(id) ON DELETE CASCADE
-);
-
--- Receipt number counter (replaces PostgreSQL sequence)
-CREATE TABLE IF NOT EXISTS pos_sequences (
-  seq_name   VARCHAR(50) PRIMARY KEY,
-  seq_value  BIGINT      NOT NULL DEFAULT 0
-);
-INSERT IGNORE INTO pos_sequences (seq_name, seq_value) VALUES ('receipt', 0), ('hold_ref', 0);
-
--- -------------------------------------------------------
--- sales
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS sales (
-  sale_id          CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  shift_id         CHAR(36)      NOT NULL,
-  terminal_id      CHAR(36)      NOT NULL,
-  location_id      CHAR(36)      NOT NULL,
-  cashier_id       CHAR(36)      NOT NULL,
-  receipt_no       VARCHAR(50)   NOT NULL UNIQUE DEFAULT '',
-  sale_status      VARCHAR(20)   NOT NULL DEFAULT 'completed' CHECK (sale_status IN ('completed','held','cancelled','voided')),
-  subtotal         DECIMAL(12,2) NOT NULL DEFAULT 0,
-  discount_amount  DECIMAL(12,2) NOT NULL DEFAULT 0,
-  tax_amount       DECIMAL(12,2) NOT NULL DEFAULT 0,
-  total_amount     DECIMAL(12,2) NOT NULL DEFAULT 0,
-  amount_tendered  DECIMAL(12,2) NOT NULL DEFAULT 0,
-  change_amount    DECIMAL(12,2) NOT NULL DEFAULT 0,
-  customer_id      CHAR(36)      NULL,
-  loyalty_points_earned DECIMAL(12,2) NOT NULL DEFAULT 0,
-  loyalty_points_redeemed DECIMAL(12,2) NOT NULL DEFAULT 0,
-  voided_by        CHAR(36)      NULL,
-  voided_at        DATETIME      NULL,
-  void_reason      TEXT          NOT NULL,
-  created_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (shift_id)    REFERENCES pos_shifts(shift_id)       ON DELETE RESTRICT,
-  FOREIGN KEY (terminal_id) REFERENCES pos_terminals(terminal_id) ON DELETE RESTRICT,
-  FOREIGN KEY (location_id) REFERENCES inv_locations(id)          ON DELETE RESTRICT
-);
-
--- -------------------------------------------------------
--- sale_items
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS sale_items (
-  item_id               CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  sale_id               CHAR(36)      NOT NULL,
-  product_id            CHAR(36)      NULL,
-  barcode               VARCHAR(100)  NOT NULL DEFAULT '',
-  sku_code              VARCHAR(100)  NOT NULL DEFAULT '',
-  product_name_snapshot VARCHAR(255)  NOT NULL DEFAULT '',
-  qty                   DECIMAL(12,4) NOT NULL,
-  retail_unit_price     DECIMAL(12,2) NOT NULL DEFAULT 0,
-  unit_price            DECIMAL(12,2) NOT NULL,
-  wholesale_enabled     TINYINT(1)    NOT NULL DEFAULT 0,
-  wholesale_break_qty_in_base_unit DECIMAL(18,6) NOT NULL DEFAULT 0,
-  wholesale_block_price DECIMAL(12,2) NOT NULL DEFAULT 0,
-  wholesale_blocks_applied INT        NOT NULL DEFAULT 0,
-  wholesale_base_qty_applied DECIMAL(18,6) NOT NULL DEFAULT 0,
-  retail_remainder_base_qty DECIMAL(18,6) NOT NULL DEFAULT 0,
-  pricing_breakdown     VARCHAR(255)  NOT NULL DEFAULT '',
-  selected_price_level  VARCHAR(20)   NOT NULL DEFAULT 'Retail',
-  applied_price_level   VARCHAR(20)   NOT NULL DEFAULT 'Retail',
-  price_source          VARCHAR(30)   NOT NULL DEFAULT 'Retail',
-  cost_at_sale          DECIMAL(12,2) NOT NULL DEFAULT 0,
-  discount_amount       DECIMAL(12,2) NOT NULL DEFAULT 0,
-  subtotal              DECIMAL(12,2) NOT NULL DEFAULT 0,
-  sort_order            INT           NOT NULL DEFAULT 0,
-  FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE
-);
-
--- -------------------------------------------------------
--- sale_payments
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS sale_payments (
-  payment_id     CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  sale_id        CHAR(36)      NOT NULL,
-  payment_method VARCHAR(20)   NOT NULL CHECK (payment_method IN ('cash','gcash','charge')),
-  amount         DECIMAL(12,2) NOT NULL,
-  reference_no   VARCHAR(100)  NOT NULL DEFAULT '',
-  created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (sale_id) REFERENCES sales(sale_id) ON DELETE CASCADE
-);
-
--- -------------------------------------------------------
--- held_sales
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS held_sales (
-  held_sale_id   CHAR(36)     PRIMARY KEY DEFAULT (UUID()),
-  shift_id       CHAR(36)     NOT NULL,
-  terminal_id    CHAR(36)     NOT NULL,
-  cashier_id     CHAR(36)     NOT NULL,
-  hold_reference VARCHAR(20)  NOT NULL UNIQUE DEFAULT '',
-  customer_id    CHAR(36)     NULL,
-  customer_name_snapshot VARCHAR(255) NOT NULL DEFAULT 'Walk-in',
-  customer_price_level_snapshot VARCHAR(20) NOT NULL DEFAULT 'Retail',
-  status         VARCHAR(20)  NOT NULL DEFAULT 'held' CHECK (status IN ('held','recalled','expired','cancelled')),
-  subtotal       DECIMAL(12,2) NOT NULL DEFAULT 0,
-  notes          TEXT          NOT NULL,
-  created_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at     DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- -------------------------------------------------------
--- held_sale_items
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS held_sale_items (
-  item_id               CHAR(36)      PRIMARY KEY DEFAULT (UUID()),
-  held_sale_id          CHAR(36)      NOT NULL,
-  product_id            CHAR(36)      NULL,
-  barcode               VARCHAR(100)  NOT NULL DEFAULT '',
-  sku_code              VARCHAR(100)  NOT NULL DEFAULT '',
-  product_name_snapshot VARCHAR(255)  NOT NULL DEFAULT '',
-  qty                   DECIMAL(12,4) NOT NULL,
-  retail_unit_price     DECIMAL(12,2) NOT NULL DEFAULT 0,
-  unit_price            DECIMAL(12,2) NOT NULL,
-  wholesale_enabled     TINYINT(1)    NOT NULL DEFAULT 0,
-  wholesale_break_qty_in_base_unit DECIMAL(18,6) NOT NULL DEFAULT 0,
-  wholesale_block_price DECIMAL(12,2) NOT NULL DEFAULT 0,
-  wholesale_blocks_applied INT        NOT NULL DEFAULT 0,
-  wholesale_base_qty_applied DECIMAL(18,6) NOT NULL DEFAULT 0,
-  retail_remainder_base_qty DECIMAL(18,6) NOT NULL DEFAULT 0,
-  pricing_breakdown     VARCHAR(255)  NOT NULL DEFAULT '',
-  selected_price_level  VARCHAR(20)   NOT NULL DEFAULT 'Retail',
-  applied_price_level   VARCHAR(20)   NOT NULL DEFAULT 'Retail',
-  price_source          VARCHAR(30)   NOT NULL DEFAULT 'Retail',
-  discount_amount       DECIMAL(12,2) NOT NULL DEFAULT 0,
-  subtotal              DECIMAL(12,2) NOT NULL DEFAULT 0,
-  sort_order            INT           NOT NULL DEFAULT 0,
-  FOREIGN KEY (held_sale_id) REFERENCES held_sales(held_sale_id) ON DELETE CASCADE
-);
-
--- -------------------------------------------------------
--- POS permissions (supervisor override rules)
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS pos_permissions (
-  id             CHAR(36)      NOT NULL DEFAULT (UUID()),
-  role           VARCHAR(50)   NULL,
-  user_id        CHAR(36)      NULL,
-  permission     VARCHAR(50)   NOT NULL,
-  max_discount_pct DECIMAL(5,2) NULL,
-  requires_pin   TINYINT(1)   NOT NULL DEFAULT 0,
-  pin_hash       VARCHAR(255)  NULL,
-  created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+DROP TABLE IF EXISTS `audit_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `audit_logs` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `user_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `action` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `module` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `table_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `record_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `changes` json DEFAULT NULL,
+  `details` json DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_audit_logs_user` (`user_id`),
+  KEY `idx_audit_logs_created` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- -------------------------------------------------------
--- POS customers / loyalty
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS pos_customers (
-  customer_id    CHAR(36)      NOT NULL DEFAULT (UUID()),
-  first_name     VARCHAR(100)  NOT NULL DEFAULT '',
-  last_name      VARCHAR(100)  NOT NULL DEFAULT '',
-  phone          VARCHAR(50)   NOT NULL DEFAULT '',
-  email          VARCHAR(255)  NOT NULL DEFAULT '',
-  address        TEXT          NULL,
-  price_level    VARCHAR(20)   NOT NULL DEFAULT 'Retail',
-  messenger_psid VARCHAR(255)  NOT NULL DEFAULT '',
-  messenger_linked TINYINT(1)  NOT NULL DEFAULT 0,
-  last_messenger_interaction_at DATETIME NULL,
-  loyalty_points INT           NOT NULL DEFAULT 0,
-  credit_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
-  is_active      TINYINT(1)   NOT NULL DEFAULT 1,
-  created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (customer_id)
+--
+-- Table structure for table `bank_accounts`
+--
+
+DROP TABLE IF EXISTS `bank_accounts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bank_accounts` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `name` varchar(255) NOT NULL,
+  `bank_name` varchar(255) NOT NULL DEFAULT '',
+  `account_number` varchar(255) NOT NULL DEFAULT '',
+  `beginning_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `current_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `bank_deposits`
+--
+
+DROP TABLE IF EXISTS `bank_deposits`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bank_deposits` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `bank_account_id` char(36) NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `date` date NOT NULL,
+  `description` text NOT NULL,
+  `reference_number` varchar(255) NOT NULL DEFAULT '',
+  `source_type` varchar(50) NOT NULL DEFAULT '',
+  `source_description` varchar(255) NOT NULL DEFAULT '',
+  `notes` text,
+  `status` varchar(20) NOT NULL DEFAULT 'verified',
+  `deposited_at` datetime DEFAULT NULL,
+  `verified_at` datetime DEFAULT NULL,
+  `verified_by` char(36) DEFAULT NULL,
+  `cancelled_at` datetime DEFAULT NULL,
+  `source_transaction_id` char(36) DEFAULT NULL,
+  `cashier_remittance_id` char(36) DEFAULT NULL,
+  `source_module` varchar(50) DEFAULT NULL,
+  `attachment_reference` varchar(255) DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `bank_account_id` (`bank_account_id`),
+  CONSTRAINT `bank_deposits_ibfk_1` FOREIGN KEY (`bank_account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `bank_reconciliations`
+--
+
+DROP TABLE IF EXISTS `bank_reconciliations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bank_reconciliations` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `bank_account_id` char(36) NOT NULL,
+  `statement_date` date NOT NULL,
+  `statement_ending_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `system_book_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `uncleared_checks_total` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `deposits_in_transit_total` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `adjusted_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `variance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `remarks` text,
+  `status` varchar(20) NOT NULL DEFAULT 'draft',
+  `created_by` char(36) DEFAULT NULL,
+  `reviewed_by` char(36) DEFAULT NULL,
+  `reviewed_at` datetime DEFAULT NULL,
+  `finalized_by` char(36) DEFAULT NULL,
+  `finalized_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `bank_transactions`
+--
+
+DROP TABLE IF EXISTS `bank_transactions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `bank_transactions` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `bank_account_id` char(36) NOT NULL,
+  `transaction_type` varchar(30) NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `direction` varchar(10) NOT NULL DEFAULT 'debit',
+  `date` date NOT NULL,
+  `description` text NOT NULL,
+  `notes` text,
+  `reference_number` varchar(255) NOT NULL DEFAULT '',
+  `source_transaction_id` char(36) DEFAULT NULL,
+  `check_id` char(36) DEFAULT NULL,
+  `payable_id` char(36) DEFAULT NULL,
+  `balance_after` decimal(12,2) DEFAULT NULL,
+  `module_source` varchar(50) DEFAULT NULL,
+  `attachment_reference` varchar(255) DEFAULT NULL,
+  `disbursement_id` char(36) DEFAULT NULL,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `bank_account_id` (`bank_account_id`),
+  CONSTRAINT `bank_transactions_ibfk_1` FOREIGN KEY (`bank_account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `bank_transactions_type_chk` CHECK ((`transaction_type` in (_utf8mb4'deposit',_utf8mb4'withdrawal',_utf8mb4'interest_income',_utf8mb4'bank_fee',_utf8mb4'check_payment',_utf8mb4'disbursement',_utf8mb4'adjustment',_utf8mb4'transfer_in',_utf8mb4'transfer_out',_utf8mb4'owner_funding',_utf8mb4'owner_withdrawal')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `cash_daily_history`
+--
+
+DROP TABLE IF EXISTS `cash_daily_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cash_daily_history` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `date` date NOT NULL,
+  `beginning_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_cash_in` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_cash_out` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `transaction_count` int NOT NULL DEFAULT '0',
+  `cash_fees_collected` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `cash_given_out` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `cash_out_to_fund` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `bank_deposits` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `cash_fund_disbursements` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `ending_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `posted_by` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `posted_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `date` (`date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE IF NOT EXISTS customer_credit_ledger (
-  id               CHAR(36)      NOT NULL DEFAULT (UUID()),
-  customer_id      CHAR(36)      NOT NULL,
-  entry_type       VARCHAR(20)   NOT NULL DEFAULT 'charge',
-  amount           DECIMAL(12,2) NOT NULL DEFAULT 0,
-  balance_before   DECIMAL(12,2) NOT NULL DEFAULT 0,
-  balance_after    DECIMAL(12,2) NOT NULL DEFAULT 0,
-  payment_method   VARCHAR(20)   NOT NULL DEFAULT 'cash',
-  payment_number   VARCHAR(50)   NOT NULL DEFAULT '',
-  reference_number VARCHAR(100)  NOT NULL DEFAULT '',
-  target_account_type VARCHAR(30) NOT NULL DEFAULT '',
-  target_account_id CHAR(36) NULL,
-  target_account_name VARCHAR(255) NOT NULL DEFAULT '',
-  accounting_entry_id CHAR(36) NULL,
-  sale_id          CHAR(36)      NULL,
-  notes            TEXT          NULL,
-  created_by       CHAR(36)      NULL,
-  created_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at       DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_customer_credit_ledger_customer (customer_id),
-  KEY idx_customer_credit_ledger_sale (sale_id),
-  KEY idx_customer_credit_ledger_created_at (created_at)
+--
+-- Table structure for table `cash_transactions`
+--
+
+DROP TABLE IF EXISTS `cash_transactions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cash_transactions` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `transaction_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `transaction_category` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'regular',
+  `amount` decimal(12,2) NOT NULL,
+  `date` date NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `reference_number` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `cash_out_type` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `source_module` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `source_reference_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `disbursement_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `source_pos_remittance_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `is_closed` tinyint(1) NOT NULL DEFAULT '0',
+  `cleared_at` datetime DEFAULT NULL,
+  `created_by` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `cash_transactions_chk_1` CHECK ((`transaction_type` in (_utf8mb4'beginning_balance',_utf8mb4'bank_deposit',_utf8mb4'cash_fund_disbursement',_utf8mb4'pos_remittance',_utf8mb4'cash_in',_utf8mb4'cash_out')))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE IF NOT EXISTS pos_message_logs (
-  id                  CHAR(36)      NOT NULL DEFAULT (UUID()),
-  held_sale_id        CHAR(36)      NOT NULL,
-  customer_id         CHAR(36)      NOT NULL,
-  channel             VARCHAR(30)   NOT NULL DEFAULT 'messenger',
-  messenger_psid_used VARCHAR(255)  NOT NULL DEFAULT '',
-  sent_at             DATETIME      NULL,
-  sent_by             CHAR(36)      NULL,
-  status              VARCHAR(20)   NOT NULL DEFAULT 'pending',
-  error_message       TEXT          NULL,
-  meta_message_id     VARCHAR(255)  NULL,
-  created_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  KEY idx_pos_message_logs_hold (held_sale_id),
-  KEY idx_pos_message_logs_customer (customer_id),
-  KEY idx_pos_message_logs_channel (channel),
-  KEY idx_pos_message_logs_sent_at (sent_at)
+--
+-- Table structure for table `cashier_remittances`
+--
+
+DROP TABLE IF EXISTS `cashier_remittances`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `cashier_remittances` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `cashier_id` char(36) NOT NULL,
+  `source_type` varchar(30) NOT NULL DEFAULT 'gcash',
+  `source_account_id` char(36) DEFAULT NULL,
+  `source_bank_id` char(36) DEFAULT NULL,
+  `destination_type` varchar(30) NOT NULL DEFAULT 'bank',
+  `destination_bank_id` char(36) DEFAULT NULL,
+  `destination_account_id` char(36) DEFAULT NULL,
+  `shift_id` char(36) DEFAULT NULL,
+  `date` date NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `bank_fee` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `notes` text,
+  `description` text NOT NULL,
+  `reference_number` varchar(255) NOT NULL DEFAULT '',
+  `attachment_reference` varchar(255) DEFAULT NULL,
+  `source_transaction_id` char(36) DEFAULT NULL,
+  `destination_transaction_id` char(36) DEFAULT NULL,
+  `approval_required` tinyint(1) NOT NULL DEFAULT '0',
+  `approval_status` varchar(20) NOT NULL DEFAULT 'approved',
+  `approved_by` char(36) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'pending',
+  `confirmed_by` char(36) DEFAULT NULL,
+  `confirmed_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `created_by` char(36) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `cashier_remittances_chk_1` CHECK ((`status` in (_utf8mb4'pending',_utf8mb4'confirmed',_utf8mb4'cancelled')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `checks_issued`
+--
+
+DROP TABLE IF EXISTS `checks_issued`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `checks_issued` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `bank_account_id` char(36) NOT NULL,
+  `supplier_id` char(36) DEFAULT NULL,
+  `payable_id` char(36) DEFAULT NULL,
+  `check_number` varchar(100) NOT NULL,
+  `check_date` date DEFAULT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `date` date NOT NULL,
+  `issued_date` date DEFAULT NULL,
+  `payee` varchar(255) NOT NULL DEFAULT '',
+  `description` text NOT NULL,
+  `notes` text,
+  `attachment_reference` varchar(255) DEFAULT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'draft',
+  `cleared_date` date DEFAULT NULL,
+  `disbursement_id` char(36) DEFAULT NULL,
+  `manually_set_status` tinyint(1) NOT NULL DEFAULT '0',
+  `approval_required` tinyint(1) NOT NULL DEFAULT '0',
+  `approval_status` varchar(20) NOT NULL DEFAULT 'approved',
+  `approved_by` char(36) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `rejected_reason` text,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `bank_account_id` (`bank_account_id`),
+  CONSTRAINT `checks_issued_ibfk_1` FOREIGN KEY (`bank_account_id`) REFERENCES `bank_accounts` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `checks_issued_status_chk` CHECK ((`status` in (_utf8mb4'draft',_utf8mb4'pending',_utf8mb4'pdc',_utf8mb4'outstanding',_utf8mb4'cleared',_utf8mb4'cancelled',_utf8mb4'bounced',_utf8mb4'stale')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `company_settings`
+--
+
+DROP TABLE IF EXISTS `company_settings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `company_settings` (
+  `id` int NOT NULL DEFAULT '1',
+  `company_name` varchar(255) NOT NULL DEFAULT 'My Business',
+  `company_address` text,
+  `contact_number` varchar(50) NOT NULL DEFAULT '',
+  `email` varchar(255) NOT NULL DEFAULT '',
+  `website` varchar(255) NOT NULL DEFAULT '',
+  `tin` varchar(50) NOT NULL DEFAULT '',
+  `business_type` varchar(100) NOT NULL DEFAULT '',
+  `branch_name` varchar(100) NOT NULL DEFAULT '',
+  `default_currency` varchar(10) NOT NULL DEFAULT 'PHP',
+  `app_title` varchar(255) NOT NULL DEFAULT '',
+  `show_company_header_in_reports` tinyint(1) NOT NULL DEFAULT '1',
+  `show_logo_in_reports` tinyint(1) NOT NULL DEFAULT '1',
+  `logo_url` varchar(500) NOT NULL DEFAULT '',
+  `footer_notes` text,
+  `receipt_notes` text,
+  `payslip_footer_notes` text,
+  `publisher` varchar(100) NOT NULL DEFAULT 'Cebu DigiBox',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `receipt_printer_name` varchar(255) NOT NULL DEFAULT 'XPrinter 58IIH',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `customer_credit_ledger`
+--
+
+DROP TABLE IF EXISTS `customer_credit_ledger`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `customer_credit_ledger` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `customer_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `entry_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'charge',
+  `amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `balance_before` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `balance_after` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `payment_method` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cash',
+  `payment_number` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `reference_number` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `target_account_type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `target_account_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `target_account_name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `accounting_entry_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `sale_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_customer_credit_ledger_customer` (`customer_id`),
+  KEY `idx_customer_credit_ledger_sale` (`sale_id`),
+  KEY `idx_customer_credit_ledger_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- -------------------------------------------------------
--- POS audit log (void / return / price override events)
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS pos_audit_log (
-  id             CHAR(36)      NOT NULL DEFAULT (UUID()),
-  shift_id       CHAR(36)      NULL,
-  terminal_id    CHAR(36)      NULL,
-  sale_id        CHAR(36)      NULL,
-  action         VARCHAR(100)  NOT NULL,
-  actor_id       CHAR(36)      NULL,
-  supervisor_id  CHAR(36)      NULL,
-  details        JSON          NULL,
-  created_at     TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (id)
+--
+-- Table structure for table `daily_history`
+--
+
+DROP TABLE IF EXISTS `daily_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `daily_history` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `account_id` char(36) NOT NULL,
+  `date` date NOT NULL,
+  `beginning_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_cash_in` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_cash_out` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_transaction_fee` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_cash_fees` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_delivery_fee` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `transaction_count` int NOT NULL DEFAULT '0',
+  `ending_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `posted_by` char(36) DEFAULT NULL,
+  `shift_cash_in` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `shift_cash_out` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_daily_history` (`account_id`,`date`),
+  CONSTRAINT `daily_history_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `daily_sales`
+--
+
+DROP TABLE IF EXISTS `daily_sales`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `daily_sales` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `date` date NOT NULL,
+  `sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `cost_of_sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `description` text,
+  `total_pos_sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `cash_pos_sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `gcash_pos_sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `card_pos_sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `pos_synced_at` datetime DEFAULT NULL,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `total_sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `cash_sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `gcash_sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `card_sales` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `notes` text NOT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `date` (`date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `disbursements`
+--
+
+DROP TABLE IF EXISTS `disbursements`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `disbursements` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `supplier_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `owner_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `affects_cashflow` tinyint(1) NOT NULL DEFAULT '1',
+  `date` date NOT NULL,
+  `payee` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `purpose` text COLLATE utf8mb4_unicode_ci,
+  `payment_method` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cash',
+  `check_number` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `description` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `reference_number` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `disbursement_type` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'cash',
+  `source_module` varchar(60) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `source_reference_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `source_account_type` varchar(30) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `source_account_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `check_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `owner_ledger_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- -------------------------------------------------------
--- Sale returns
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS sale_returns (
-  return_id         CHAR(36)      NOT NULL DEFAULT (UUID()),
-  return_no         VARCHAR(50)   NOT NULL DEFAULT '',
-  original_sale_id  CHAR(36)      NOT NULL,
-  shift_id          CHAR(36)      NULL,
-  terminal_id       CHAR(36)      NULL,
-  location_id       CHAR(36)      NULL,
-  cashier_id        CHAR(36)      NULL,
-  supervisor_id     CHAR(36)      NULL,
-  reason            TEXT          NULL,
-  refund_method     VARCHAR(50)   NOT NULL DEFAULT 'cash',
-  total_return_amt  DECIMAL(12,2) NOT NULL DEFAULT 0,
-  notes             TEXT          NULL,
-  created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (return_id)
+--
+-- Table structure for table `employee_time_logs`
+--
+
+DROP TABLE IF EXISTS `employee_time_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `employee_time_logs` (
+  `id` varchar(36) NOT NULL,
+  `employee_id` varchar(36) NOT NULL,
+  `log_date` date NOT NULL,
+  `log_time` time NOT NULL,
+  `log_type` enum('TIME_IN','TIME_OUT') NOT NULL,
+  `device_name` varchar(100) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_etl_employee_date` (`employee_id`,`log_date`),
+  KEY `idx_etl_log_date` (`log_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `finance_owner_movements`
+--
+
+DROP TABLE IF EXISTS `finance_owner_movements`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `finance_owner_movements` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `date` date NOT NULL,
+  `movement_type` varchar(20) NOT NULL DEFAULT 'funding',
+  `target_module` varchar(20) NOT NULL DEFAULT 'bank',
+  `owner_id` char(36) DEFAULT NULL,
+  `bank_account_id` char(36) DEFAULT NULL,
+  `account_id` char(36) DEFAULT NULL,
+  `amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `reference_number` varchar(120) NOT NULL DEFAULT '',
+  `remarks` text,
+  `attachment_reference` varchar(255) DEFAULT NULL,
+  `approval_required` tinyint(1) NOT NULL DEFAULT '0',
+  `approval_status` varchar(20) NOT NULL DEFAULT 'approved',
+  `approved_by` char(36) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `posted_bank_transaction_id` char(36) DEFAULT NULL,
+  `posted_transaction_id` char(36) DEFAULT NULL,
+  `posted_cash_transaction_id` char(36) DEFAULT NULL,
+  `owner_ledger_id` char(36) DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `finance_owners`
+--
+
+DROP TABLE IF EXISTS `finance_owners`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `finance_owners` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `name` varchar(120) NOT NULL,
+  `remarks` text,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `held_sale_items`
+--
+
+DROP TABLE IF EXISTS `held_sale_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `held_sale_items` (
+  `item_id` char(36) NOT NULL DEFAULT (uuid()),
+  `held_sale_id` char(36) NOT NULL,
+  `product_id` char(36) DEFAULT NULL,
+  `barcode` varchar(100) NOT NULL DEFAULT '',
+  `sku_code` varchar(100) NOT NULL DEFAULT '',
+  `product_name_snapshot` varchar(255) NOT NULL DEFAULT '',
+  `qty` decimal(12,4) NOT NULL,
+  `retail_unit_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `unit_price` decimal(12,2) NOT NULL,
+  `wholesale_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `wholesale_break_qty_in_base_unit` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `wholesale_block_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `wholesale_blocks_applied` int NOT NULL DEFAULT '0',
+  `wholesale_base_qty_applied` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `retail_remainder_base_qty` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `pricing_breakdown` varchar(255) NOT NULL DEFAULT '',
+  `selected_price_level` varchar(20) NOT NULL DEFAULT 'Retail',
+  `applied_price_level` varchar(20) NOT NULL DEFAULT 'Retail',
+  `price_source` varchar(30) NOT NULL DEFAULT 'Retail',
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `selected_unit_id` char(36) DEFAULT NULL,
+  `selected_unit_name` varchar(100) NOT NULL DEFAULT '',
+  `qty_in_base_unit_per_unit` decimal(18,6) NOT NULL DEFAULT '1.000000',
+  `total_base_qty_deducted` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `base_unit_name` varchar(100) NOT NULL DEFAULT '',
+  PRIMARY KEY (`item_id`),
+  KEY `held_sale_id` (`held_sale_id`),
+  CONSTRAINT `held_sale_items_ibfk_1` FOREIGN KEY (`held_sale_id`) REFERENCES `held_sales` (`held_sale_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `held_sales`
+--
+
+DROP TABLE IF EXISTS `held_sales`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `held_sales` (
+  `held_sale_id` char(36) NOT NULL DEFAULT (uuid()),
+  `shift_id` char(36) NOT NULL,
+  `terminal_id` char(36) NOT NULL,
+  `cashier_id` char(36) NOT NULL,
+  `hold_reference` varchar(20) NOT NULL DEFAULT '',
+  `customer_id` char(36) DEFAULT NULL,
+  `customer_name_snapshot` varchar(255) NOT NULL DEFAULT 'Walk-in',
+  `customer_price_level_snapshot` varchar(20) NOT NULL DEFAULT 'Retail',
+  `status` varchar(20) NOT NULL DEFAULT 'held',
+  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `notes` text NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`held_sale_id`),
+  UNIQUE KEY `hold_reference` (`hold_reference`),
+  CONSTRAINT `held_sales_chk_1` CHECK ((`status` in (_utf8mb4'held',_utf8mb4'recalled',_utf8mb4'expired',_utf8mb4'cancelled')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `hr_departments`
+--
+
+DROP TABLE IF EXISTS `hr_departments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `hr_departments` (
+  `id` varchar(36) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `description` text,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `hr_employees`
+--
+
+DROP TABLE IF EXISTS `hr_employees`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `hr_employees` (
+  `id` varchar(36) NOT NULL,
+  `employee_code` varchar(50) NOT NULL,
+  `first_name` varchar(100) NOT NULL,
+  `middle_name` varchar(100) DEFAULT NULL,
+  `last_name` varchar(100) NOT NULL,
+  `gender` enum('Male','Female','Other') DEFAULT 'Male',
+  `birthdate` date DEFAULT NULL,
+  `civil_status` enum('Single','Married','Widowed','Separated') DEFAULT 'Single',
+  `address` text,
+  `mobile` varchar(30) DEFAULT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `emergency_contact_name` varchar(150) DEFAULT NULL,
+  `emergency_contact_phone` varchar(30) DEFAULT NULL,
+  `date_hired` date DEFAULT NULL,
+  `employment_status` enum('Regular','Probationary','Contractual','Part-time') DEFAULT 'Regular',
+  `department_id` varchar(36) DEFAULT NULL,
+  `position_id` varchar(36) DEFAULT NULL,
+  `branch` varchar(100) DEFAULT NULL,
+  `payroll_type` enum('Monthly','Daily') DEFAULT 'Monthly',
+  `basic_monthly_rate` decimal(12,2) DEFAULT '0.00',
+  `daily_rate` decimal(12,2) DEFAULT '0.00',
+  `hourly_rate` decimal(12,4) DEFAULT '0.0000',
+  `rest_day` enum('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday') DEFAULT 'Sunday',
+  `tax_type` enum('Taxable','Non-taxable','Minimum Wage') DEFAULT 'Taxable',
+  `sss_number` varchar(30) DEFAULT NULL,
+  `philhealth_number` varchar(30) DEFAULT NULL,
+  `pagibig_number` varchar(30) DEFAULT NULL,
+  `tin` varchar(30) DEFAULT NULL,
+  `bank_account` varchar(100) DEFAULT NULL,
+  `payment_method` enum('Cash','ATM/Bank','GCash','Check') DEFAULT 'Cash',
+  `overtime_eligible` tinyint(1) DEFAULT '1',
+  `holiday_pay_eligible` tinyint(1) DEFAULT '1',
+  `fixed_allowance` decimal(12,2) DEFAULT '0.00',
+  `notes` text,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `employee_code` (`employee_code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `hr_positions`
+--
+
+DROP TABLE IF EXISTS `hr_positions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `hr_positions` (
+  `id` varchar(36) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `department_id` varchar(36) DEFAULT NULL,
+  `description` text,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `hr_rate_history`
+--
+
+DROP TABLE IF EXISTS `hr_rate_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `hr_rate_history` (
+  `id` varchar(36) NOT NULL,
+  `employee_id` varchar(36) NOT NULL,
+  `effective_date` date NOT NULL,
+  `old_monthly_rate` decimal(12,2) DEFAULT '0.00',
+  `new_monthly_rate` decimal(12,2) DEFAULT '0.00',
+  `old_daily_rate` decimal(12,2) DEFAULT '0.00',
+  `new_daily_rate` decimal(12,2) DEFAULT '0.00',
+  `reason` text,
+  `updated_by` varchar(150) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inv_brands`
+--
+
+DROP TABLE IF EXISTS `inv_brands`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_brands` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `name` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inv_categories`
+--
+
+DROP TABLE IF EXISTS `inv_categories`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_categories` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `parent_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `created_by` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`),
+  KEY `parent_id` (`parent_id`),
+  CONSTRAINT `inv_categories_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `inv_categories` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE IF NOT EXISTS sale_return_items (
-  id                     CHAR(36)      NOT NULL DEFAULT (UUID()),
-  return_id              CHAR(36)      NOT NULL,
-  original_sale_item_id  CHAR(36)      NOT NULL,
-  product_id             CHAR(36)      NULL,
-  product_name_snapshot  VARCHAR(255)  NOT NULL DEFAULT '',
-  sku_code               VARCHAR(100)  NOT NULL DEFAULT '',
-  qty_returned           INT           NOT NULL DEFAULT 0,
-  unit_price             DECIMAL(12,2) NOT NULL DEFAULT 0,
-  subtotal               DECIMAL(12,2) NOT NULL DEFAULT 0,
-  PRIMARY KEY (id)
+--
+-- Table structure for table `inv_locations`
+--
+
+DROP TABLE IF EXISTS `inv_locations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_locations` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `code` varchar(50) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `address` text NOT NULL,
+  `city` varchar(255) NOT NULL DEFAULT '',
+  `phone` varchar(50) NOT NULL DEFAULT '',
+  `manager_name` varchar(255) NOT NULL DEFAULT '',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inv_product_pricing_history`
+--
+
+DROP TABLE IF EXISTS `inv_product_pricing_history`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_product_pricing_history` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `product_id` char(36) NOT NULL,
+  `old_cost` decimal(12,2) DEFAULT NULL,
+  `new_cost` decimal(12,2) DEFAULT NULL,
+  `old_retail_price` decimal(12,2) DEFAULT NULL,
+  `new_retail_price` decimal(12,2) DEFAULT NULL,
+  `old_wholesale_price` decimal(12,2) DEFAULT NULL,
+  `new_wholesale_price` decimal(12,2) DEFAULT NULL,
+  `old_special_price` decimal(12,2) DEFAULT NULL,
+  `new_special_price` decimal(12,2) DEFAULT NULL,
+  `changed_by` char(36) DEFAULT NULL,
+  `changed_by_name` varchar(255) NOT NULL DEFAULT '',
+  `changed_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_inv_product_pricing_history_product` (`product_id`),
+  KEY `idx_inv_product_pricing_history_changed_at` (`changed_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inv_product_selling_units`
+--
+
+DROP TABLE IF EXISTS `inv_product_selling_units`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_product_selling_units` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `product_id` char(36) NOT NULL,
+  `unit_id` char(36) NOT NULL,
+  `qty_in_base_unit` decimal(18,6) NOT NULL DEFAULT '1.000000',
+  `selling_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `retail_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `wholesale_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `special_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `wholesale_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `wholesale_break_qty_in_base_unit` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `wholesale_block_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_product_selling_unit` (`product_id`,`unit_id`),
+  KEY `unit_id` (`unit_id`),
+  CONSTRAINT `inv_product_selling_units_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `inv_product_selling_units_ibfk_2` FOREIGN KEY (`unit_id`) REFERENCES `inv_units` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inv_product_unit_conversions`
+--
+
+DROP TABLE IF EXISTS `inv_product_unit_conversions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_product_unit_conversions` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `product_id` char(36) NOT NULL,
+  `unit_id` char(36) NOT NULL,
+  `equivalent_qty_in_base_unit` decimal(18,6) NOT NULL DEFAULT '1.000000',
+  `allow_purchase` tinyint(1) NOT NULL DEFAULT '0',
+  `allow_sale` tinyint(1) NOT NULL DEFAULT '0',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_product_unit_conversion` (`product_id`,`unit_id`),
+  KEY `unit_id` (`unit_id`),
+  CONSTRAINT `inv_product_unit_conversions_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `inv_product_unit_conversions_ibfk_2` FOREIGN KEY (`unit_id`) REFERENCES `inv_units` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inv_products`
+--
+
+DROP TABLE IF EXISTS `inv_products`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_products` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `sku_code` varchar(100) NOT NULL,
+  `barcode` varchar(100) NOT NULL DEFAULT '',
+  `barcode2` varchar(100) NOT NULL DEFAULT '',
+  `name` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `category_id` char(36) DEFAULT NULL,
+  `brand_id` char(36) DEFAULT NULL,
+  `unit_id` char(36) DEFAULT NULL,
+  `supplier_id` char(36) DEFAULT NULL,
+  `cost_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `retail_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `wholesale_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `special_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `selling_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `reorder_point` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `is_expiry_tracked` tinyint(1) NOT NULL DEFAULT '0',
+  `near_expiry_days` int NOT NULL DEFAULT '90',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `base_unit_id` char(36) DEFAULT NULL,
+  `default_purchase_unit_id` char(36) DEFAULT NULL,
+  `default_selling_unit_id` char(36) DEFAULT NULL,
+  `default_cost` decimal(12,2) NOT NULL DEFAULT '0.00',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `sku_code` (`sku_code`),
+  KEY `category_id` (`category_id`),
+  KEY `brand_id` (`brand_id`),
+  KEY `unit_id` (`unit_id`),
+  KEY `supplier_id` (`supplier_id`),
+  KEY `idx_inv_products_sku` (`sku_code`),
+  KEY `idx_inv_products_barcode` (`barcode`),
+  CONSTRAINT `inv_products_ibfk_2` FOREIGN KEY (`brand_id`) REFERENCES `inv_brands` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `inv_products_ibfk_3` FOREIGN KEY (`unit_id`) REFERENCES `inv_units` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inv_roles`
+--
+
+DROP TABLE IF EXISTS `inv_roles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_roles` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `name` varchar(100) NOT NULL,
+  `display_name` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `permissions` json NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inv_suppliers`
+--
+
+DROP TABLE IF EXISTS `inv_suppliers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_suppliers` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `code` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contact_person` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `phone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `address` text COLLATE utf8mb4_unicode_ci,
+  `city` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `payment_terms` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `notes` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- -------------------------------------------------------
--- Product-specific unit conversions
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inv_product_unit_conversions (
-  id                          CHAR(36)       NOT NULL DEFAULT (UUID()),
-  product_id                  CHAR(36)       NOT NULL,
-  unit_id                     CHAR(36)       NOT NULL,
-  equivalent_qty_in_base_unit DECIMAL(18,6) NOT NULL DEFAULT 1,
-  allow_purchase              TINYINT(1)     NOT NULL DEFAULT 0,
-  allow_sale                  TINYINT(1)     NOT NULL DEFAULT 0,
-  sort_order                  INT            NOT NULL DEFAULT 0,
-  created_at                  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at                  DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_product_unit_conversion (product_id, unit_id),
-  FOREIGN KEY (product_id) REFERENCES inv_products(id) ON DELETE CASCADE,
-  FOREIGN KEY (unit_id) REFERENCES inv_units(id) ON DELETE RESTRICT
+--
+-- Table structure for table `inv_units`
+--
+
+DROP TABLE IF EXISTS `inv_units`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inv_units` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `code` varchar(20) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `abbreviation` varchar(20) NOT NULL DEFAULT '',
+  `short_name` varchar(20) NOT NULL DEFAULT '',
+  `description` text,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inventory_balances`
+--
+
+DROP TABLE IF EXISTS `inventory_balances`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inventory_balances` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `product_id` char(36) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `qty_on_hand` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `qty_available` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `last_movement_at` datetime DEFAULT NULL,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_inv_balance` (`product_id`,`location_id`),
+  KEY `location_id` (`location_id`),
+  CONSTRAINT `inventory_balances_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `inventory_balances_ibfk_2` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `inventory_movements`
+--
+
+DROP TABLE IF EXISTS `inventory_movements`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `inventory_movements` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `product_id` char(36) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `movement_type` varchar(50) NOT NULL,
+  `qty_change` decimal(12,3) NOT NULL,
+  `qty_after` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `ref_number` varchar(255) NOT NULL DEFAULT '',
+  `ref_id` char(36) DEFAULT NULL,
+  `notes` text NOT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `qty_before` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `unit_cost` decimal(12,6) DEFAULT NULL,
+  `related_location_id` char(36) DEFAULT NULL,
+  `display_unit_id` char(36) DEFAULT NULL,
+  `display_unit_name` varchar(100) NOT NULL DEFAULT '',
+  `display_qty` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `qty_in_base_unit_per_display` decimal(18,6) NOT NULL DEFAULT '1.000000',
+  `base_unit_id` char(36) DEFAULT NULL,
+  `base_unit_name` varchar(100) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`),
+  KEY `location_id` (`location_id`),
+  KEY `idx_inv_movements_product_location` (`product_id`,`location_id`),
+  CONSTRAINT `inventory_movements_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `inventory_movements_ibfk_2` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `owner_ledger`
+--
+
+DROP TABLE IF EXISTS `owner_ledger`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `owner_ledger` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `owner_id` char(36) NOT NULL,
+  `transaction_date` date NOT NULL,
+  `transaction_type` varchar(60) NOT NULL,
+  `reference_type` varchar(60) NOT NULL DEFAULT '',
+  `reference_id` char(36) DEFAULT NULL,
+  `source_module` varchar(60) NOT NULL DEFAULT '',
+  `description` text NOT NULL,
+  `increase_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `decrease_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `running_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `source_account_type` varchar(30) DEFAULT NULL,
+  `source_account_id` char(36) DEFAULT NULL,
+  `reference_number` varchar(120) NOT NULL DEFAULT '',
+  `remarks` text,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_owner_ledger_reference` (`owner_id`,`transaction_type`,`reference_type`,`reference_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pagibig_table`
+--
+
+DROP TABLE IF EXISTS `pagibig_table`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pagibig_table` (
+  `id` varchar(36) NOT NULL,
+  `year` int NOT NULL,
+  `employee_rate_percent` decimal(5,2) NOT NULL DEFAULT '2.00',
+  `employer_rate_percent` decimal(5,2) NOT NULL DEFAULT '2.00',
+  `max_employee_contribution` decimal(10,2) NOT NULL DEFAULT '100.00',
+  `max_employer_contribution` decimal(10,2) NOT NULL DEFAULT '100.00',
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payable_payments`
+--
+
+DROP TABLE IF EXISTS `payable_payments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payable_payments` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `payable_id` char(36) NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `payment_date` date NOT NULL DEFAULT (curdate()),
+  `payment_method` varchar(50) NOT NULL DEFAULT 'cash',
+  `reference_number` varchar(100) NOT NULL DEFAULT '',
+  `remarks` text,
+  `owner_id` char(36) DEFAULT NULL,
+  `bank_account_id` char(36) DEFAULT NULL,
+  `check_id` char(36) DEFAULT NULL,
+  `bank_transaction_id` char(36) DEFAULT NULL,
+  `owner_ledger_id` char(36) DEFAULT NULL,
+  `attachment_reference` varchar(255) DEFAULT NULL,
+  `approval_required` tinyint(1) NOT NULL DEFAULT '0',
+  `approval_status` varchar(20) NOT NULL DEFAULT 'approved',
+  `approved_by` char(36) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `reference_no` varchar(100) NOT NULL DEFAULT '',
+  `notes` text NOT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `payable_id` (`payable_id`),
+  CONSTRAINT `payable_payments_ibfk_1` FOREIGN KEY (`payable_id`) REFERENCES `payables` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payables`
+--
+
+DROP TABLE IF EXISTS `payables`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payables` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `payable_number` varchar(50) NOT NULL,
+  `supplier_id` char(36) NOT NULL,
+  `receiving_id` char(36) DEFAULT NULL,
+  `invoice_number` varchar(100) NOT NULL DEFAULT '',
+  `amount` decimal(12,2) NOT NULL,
+  `balance` decimal(12,2) NOT NULL,
+  `due_date` date DEFAULT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'open',
+  `notes` text NOT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `payable_number` (`payable_number`),
+  KEY `supplier_id` (`supplier_id`),
+  KEY `receiving_id` (`receiving_id`),
+  CONSTRAINT `payables_ibfk_2` FOREIGN KEY (`receiving_id`) REFERENCES `receivings` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `payables_chk_1` CHECK ((`status` in (_utf8mb4'open',_utf8mb4'partial',_utf8mb4'paid',_utf8mb4'cancelled')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_attendance`
+--
+
+DROP TABLE IF EXISTS `payroll_attendance`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_attendance` (
+  `id` varchar(36) NOT NULL,
+  `employee_id` varchar(36) NOT NULL,
+  `cutoff_id` varchar(36) DEFAULT NULL,
+  `work_date` date NOT NULL,
+  `time_in` time DEFAULT NULL,
+  `time_out` time DEFAULT NULL,
+  `hours_worked` decimal(5,2) DEFAULT '0.00',
+  `late_minutes` decimal(6,2) DEFAULT '0.00',
+  `undertime_minutes` decimal(6,2) DEFAULT '0.00',
+  `overtime_hours` decimal(5,2) DEFAULT '0.00',
+  `is_absent` tinyint(1) DEFAULT '0',
+  `is_rest_day` tinyint(1) DEFAULT '0',
+  `holiday_type` enum('None','Legal','Special') DEFAULT 'None',
+  `holiday_name` varchar(100) DEFAULT NULL,
+  `remarks` varchar(255) DEFAULT NULL,
+  `source` enum('Manual','Biometrics') DEFAULT 'Manual',
+  `batch_id` varchar(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_emp_date` (`employee_id`,`work_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_biometrics_batches`
+--
+
+DROP TABLE IF EXISTS `payroll_biometrics_batches`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_biometrics_batches` (
+  `id` varchar(36) NOT NULL,
+  `batch_name` varchar(200) NOT NULL,
+  `cutoff_id` varchar(36) DEFAULT NULL,
+  `file_name` varchar(255) DEFAULT NULL,
+  `row_count` int DEFAULT '0',
+  `imported_count` int DEFAULT '0',
+  `skipped_count` int DEFAULT '0',
+  `error_count` int DEFAULT '0',
+  `status` enum('Preview','Imported','Error') DEFAULT 'Preview',
+  `created_by` varchar(150) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_cash_advances`
+--
+
+DROP TABLE IF EXISTS `payroll_cash_advances`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_cash_advances` (
+  `id` varchar(36) NOT NULL,
+  `employee_id` varchar(36) NOT NULL,
+  `date_granted` date NOT NULL,
+  `amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `deduction_per_cutoff` decimal(12,2) DEFAULT '0.00',
+  `deduction_mode` enum('every_cutoff','every_other','every_other_2nd','manual') NOT NULL DEFAULT 'every_cutoff',
+  `status` enum('Active','Settled','Cancelled') DEFAULT 'Active',
+  `remarks` text,
+  `created_by` varchar(150) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_cutoffs`
+--
+
+DROP TABLE IF EXISTS `payroll_cutoffs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_cutoffs` (
+  `id` varchar(36) NOT NULL,
+  `period_name` varchar(100) NOT NULL,
+  `date_from` date NOT NULL,
+  `date_to` date NOT NULL,
+  `payroll_month` int NOT NULL,
+  `payroll_year` int NOT NULL,
+  `cutoff_seq` tinyint NOT NULL COMMENT '1=first half, 2=second half',
+  `status` enum('Open','Processing','Finalized') NOT NULL DEFAULT 'Open',
+  `notes` text,
+  `created_by` varchar(150) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_deduction_types`
+--
+
+DROP TABLE IF EXISTS `payroll_deduction_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_deduction_types` (
+  `id` varchar(36) NOT NULL,
+  `code` varchar(30) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `is_statutory` tinyint(1) DEFAULT '0' COMMENT '1=SSS/PhilHealth/PagIBIG/Tax',
+  `is_system` tinyint(1) DEFAULT '0',
+  `sort_order` int DEFAULT '0',
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_earnings_types`
+--
+
+DROP TABLE IF EXISTS `payroll_earnings_types`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_earnings_types` (
+  `id` varchar(36) NOT NULL,
+  `code` varchar(30) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `is_taxable` tinyint(1) DEFAULT '1',
+  `is_system` tinyint(1) DEFAULT '0' COMMENT 'System types cannot be deleted',
+  `sort_order` int DEFAULT '0',
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_holidays`
+--
+
+DROP TABLE IF EXISTS `payroll_holidays`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_holidays` (
+  `id` varchar(36) NOT NULL,
+  `holiday_name` varchar(200) NOT NULL,
+  `holiday_date` date NOT NULL,
+  `holiday_type` enum('Legal','Special') NOT NULL DEFAULT 'Legal',
+  `is_recurring` tinyint(1) DEFAULT '0',
+  `year` int DEFAULT NULL,
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_run_item_lines`
+--
+
+DROP TABLE IF EXISTS `payroll_run_item_lines`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_run_item_lines` (
+  `id` varchar(36) NOT NULL,
+  `run_item_id` varchar(36) NOT NULL,
+  `run_id` varchar(36) NOT NULL,
+  `line_type` enum('Earning','Deduction') NOT NULL,
+  `code` varchar(30) NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `amount` decimal(12,2) DEFAULT '0.00',
+  `sort_order` int DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_run_items`
+--
+
+DROP TABLE IF EXISTS `payroll_run_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_run_items` (
+  `id` varchar(36) NOT NULL,
+  `run_id` varchar(36) NOT NULL,
+  `cutoff_id` varchar(36) NOT NULL,
+  `employee_id` varchar(36) NOT NULL,
+  `employee_code` varchar(50) DEFAULT NULL,
+  `employee_name` varchar(255) DEFAULT NULL,
+  `department` varchar(100) DEFAULT NULL,
+  `position` varchar(100) DEFAULT NULL,
+  `payroll_type` varchar(20) DEFAULT NULL,
+  `basic_monthly_rate` decimal(12,2) DEFAULT '0.00',
+  `daily_rate` decimal(12,2) DEFAULT '0.00',
+  `days_in_period` decimal(5,2) DEFAULT '0.00',
+  `days_worked` decimal(5,2) DEFAULT '0.00',
+  `days_absent` decimal(5,2) DEFAULT '0.00',
+  `hours_late` decimal(6,2) DEFAULT '0.00',
+  `hours_undertime` decimal(6,2) DEFAULT '0.00',
+  `overtime_hours` decimal(6,2) DEFAULT '0.00',
+  `basic_pay` decimal(12,2) DEFAULT '0.00',
+  `overtime_pay` decimal(12,2) DEFAULT '0.00',
+  `holiday_pay` decimal(12,2) DEFAULT '0.00',
+  `allowances` decimal(12,2) DEFAULT '0.00',
+  `other_earnings` decimal(12,2) DEFAULT '0.00',
+  `gross_pay` decimal(12,2) DEFAULT '0.00',
+  `sss_deduction` decimal(10,2) DEFAULT '0.00',
+  `philhealth_deduction` decimal(10,2) DEFAULT '0.00',
+  `pagibig_deduction` decimal(10,2) DEFAULT '0.00',
+  `cash_advance_deduction` decimal(12,2) DEFAULT '0.00',
+  `other_deductions` decimal(12,2) DEFAULT '0.00',
+  `total_deductions` decimal(12,2) DEFAULT '0.00',
+  `net_pay` decimal(12,2) DEFAULT '0.00',
+  `remarks` text,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `payroll_runs`
+--
+
+DROP TABLE IF EXISTS `payroll_runs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `payroll_runs` (
+  `id` varchar(36) NOT NULL,
+  `cutoff_id` varchar(36) NOT NULL,
+  `run_number` varchar(50) DEFAULT NULL,
+  `status` enum('Draft','Processing','Finalized') DEFAULT 'Draft',
+  `total_employees` int DEFAULT '0',
+  `total_gross` decimal(14,2) DEFAULT '0.00',
+  `total_deductions` decimal(14,2) DEFAULT '0.00',
+  `total_net` decimal(14,2) DEFAULT '0.00',
+  `processed_by` varchar(150) DEFAULT NULL,
+  `processed_at` datetime DEFAULT NULL,
+  `finalized_by` varchar(150) DEFAULT NULL,
+  `finalized_at` datetime DEFAULT NULL,
+  `notes` text,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `philhealth_table`
+--
+
+DROP TABLE IF EXISTS `philhealth_table`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `philhealth_table` (
+  `id` varchar(36) NOT NULL,
+  `year` int NOT NULL,
+  `rate_percent` decimal(5,2) NOT NULL DEFAULT '5.00',
+  `min_monthly_basic` decimal(12,2) NOT NULL DEFAULT '10000.00',
+  `max_monthly_basic` decimal(12,2) NOT NULL DEFAULT '100000.00',
+  `min_contribution` decimal(10,2) NOT NULL DEFAULT '500.00',
+  `max_contribution` decimal(10,2) NOT NULL DEFAULT '5000.00',
+  `employee_share_percent` decimal(5,2) NOT NULL DEFAULT '50.00',
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `physical_count_items`
+--
+
+DROP TABLE IF EXISTS `physical_count_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `physical_count_items` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `physical_count_id` char(36) NOT NULL,
+  `product_id` char(36) NOT NULL,
+  `qty_system` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `qty_counted` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `qty_variance` decimal(12,3) GENERATED ALWAYS AS ((`qty_counted` - `qty_system`)) STORED,
+  `notes` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `physical_count_id` (`physical_count_id`),
+  KEY `product_id` (`product_id`),
+  CONSTRAINT `physical_count_items_ibfk_1` FOREIGN KEY (`physical_count_id`) REFERENCES `physical_counts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `physical_count_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `physical_counts`
+--
+
+DROP TABLE IF EXISTS `physical_counts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `physical_counts` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `pc_number` varchar(50) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'open',
+  `count_date` date NOT NULL DEFAULT (curdate()),
+  `notes` text NOT NULL,
+  `posted_by` char(36) DEFAULT NULL,
+  `posted_at` datetime DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `pc_number` (`pc_number`),
+  KEY `location_id` (`location_id`),
+  CONSTRAINT `physical_counts_ibfk_1` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `physical_counts_chk_1` CHECK ((`status` in (_cp850'open',_cp850'posted',_cp850'cancelled')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pos_audit_log`
+--
+
+DROP TABLE IF EXISTS `pos_audit_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_audit_log` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `shift_id` char(36) DEFAULT NULL,
+  `terminal_id` char(36) DEFAULT NULL,
+  `sale_id` char(36) DEFAULT NULL,
+  `action` varchar(100) NOT NULL,
+  `actor_id` char(36) DEFAULT NULL,
+  `supervisor_id` char(36) DEFAULT NULL,
+  `details` json DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pos_cash_pickup_links`
+--
+
+DROP TABLE IF EXISTS `pos_cash_pickup_links`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_cash_pickup_links` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `pickup_id` char(36) NOT NULL,
+  `source_transaction_id` char(36) NOT NULL,
+  `source_sale_id` char(36) DEFAULT NULL,
+  `linked_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pos_cash_pickup_links_pickup` (`pickup_id`),
+  KEY `idx_pos_cash_pickup_links_txn` (`source_transaction_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pos_cash_pickups`
+--
+
+DROP TABLE IF EXISTS `pos_cash_pickups`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_cash_pickups` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `shift_id` char(36) NOT NULL,
+  `terminal_id` char(36) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `business_date` date NOT NULL,
+  `pickup_kind` varchar(30) NOT NULL DEFAULT 'general',
+  `pickup_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `reason` varchar(255) NOT NULL DEFAULT '',
+  `category` varchar(80) NOT NULL DEFAULT '',
+  `related_reference` varchar(120) NOT NULL DEFAULT '',
+  `notes` text NOT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pos_cash_pickups_shift` (`shift_id`),
+  KEY `idx_pos_cash_pickups_terminal_date` (`terminal_id`,`business_date`),
+  KEY `idx_pos_cash_pickups_pickup_at` (`pickup_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pos_customers`
+--
+
+DROP TABLE IF EXISTS `pos_customers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_customers` (
+  `customer_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `first_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `last_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `phone` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `address` text COLLATE utf8mb4_unicode_ci,
+  `price_level` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Retail',
+  `messenger_psid` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `messenger_linked` tinyint(1) NOT NULL DEFAULT '0',
+  `last_messenger_interaction_at` datetime DEFAULT NULL,
+  `loyalty_points` int NOT NULL DEFAULT '0',
+  `credit_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`customer_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- -------------------------------------------------------
--- Product selling units / prices
--- -------------------------------------------------------
-CREATE TABLE IF NOT EXISTS inv_product_selling_units (
-  id               CHAR(36)       NOT NULL DEFAULT (UUID()),
-  product_id       CHAR(36)       NOT NULL,
-  unit_id          CHAR(36)       NOT NULL,
-  qty_in_base_unit DECIMAL(18,6)  NOT NULL DEFAULT 1,
-  selling_price    DECIMAL(12,2)  NOT NULL DEFAULT 0,
-  retail_price     DECIMAL(12,2)  NOT NULL DEFAULT 0,
-  wholesale_price  DECIMAL(12,2)  NOT NULL DEFAULT 0,
-  special_price    DECIMAL(12,2)  NOT NULL DEFAULT 0,
-  wholesale_enabled TINYINT(1)    NOT NULL DEFAULT 0,
-  wholesale_break_qty_in_base_unit DECIMAL(18,6) NOT NULL DEFAULT 0,
-  wholesale_block_price DECIMAL(12,2) NOT NULL DEFAULT 0,
-  is_default       TINYINT(1)     NOT NULL DEFAULT 0,
-  sort_order       INT            NOT NULL DEFAULT 0,
-  created_at       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (id),
-  UNIQUE KEY uq_product_selling_unit (product_id, unit_id),
-  FOREIGN KEY (product_id) REFERENCES inv_products(id) ON DELETE CASCADE,
-  FOREIGN KEY (unit_id) REFERENCES inv_units(id) ON DELETE RESTRICT
+--
+-- Table structure for table `pos_message_logs`
+--
+
+DROP TABLE IF EXISTS `pos_message_logs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_message_logs` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `held_sale_id` char(36) NOT NULL,
+  `customer_id` char(36) NOT NULL,
+  `channel` varchar(30) NOT NULL DEFAULT 'messenger',
+  `messenger_psid_used` varchar(255) NOT NULL DEFAULT '',
+  `sent_at` datetime DEFAULT NULL,
+  `sent_by` char(36) DEFAULT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'pending',
+  `error_message` text,
+  `meta_message_id` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pos_message_logs_hold` (`held_sale_id`),
+  KEY `idx_pos_message_logs_customer` (`customer_id`),
+  KEY `idx_pos_message_logs_channel` (`channel`),
+  KEY `idx_pos_message_logs_sent_at` (`sent_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pos_permissions`
+--
+
+DROP TABLE IF EXISTS `pos_permissions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_permissions` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `role` varchar(50) DEFAULT NULL,
+  `user_id` char(36) DEFAULT NULL,
+  `permission` varchar(50) NOT NULL,
+  `max_discount_pct` decimal(5,2) DEFAULT NULL,
+  `requires_pin` tinyint(1) NOT NULL DEFAULT '0',
+  `pin_hash` varchar(255) DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `pos_recent_items`
+--
+
+DROP TABLE IF EXISTS `pos_recent_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_recent_items` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `terminal_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `location_id` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `product_id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_used_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `use_count` int NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_pos_recent_items_terminal_product` (`terminal_id`,`product_id`),
+  KEY `idx_pos_recent_items_terminal_last_used` (`terminal_id`,`last_used_at`),
+  KEY `idx_pos_recent_items_product` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-SET FOREIGN_KEY_CHECKS = 1;
+--
+-- Table structure for table `pos_sequences`
+--
 
--- ============================================================
--- Indexes for performance
--- ============================================================
-CREATE INDEX idx_transactions_account_date ON transactions(account_id, date);
-CREATE INDEX idx_transactions_date ON transactions(date);
-CREATE INDEX idx_audit_logs_user ON audit_logs(user_id);
-CREATE INDEX idx_audit_logs_created ON audit_logs(created_at);
-CREATE INDEX idx_inv_products_sku ON inv_products(sku_code);
-CREATE INDEX idx_inv_products_barcode ON inv_products(barcode);
-CREATE INDEX idx_inv_movements_product_location ON inventory_movements(product_id, location_id);
-CREATE INDEX idx_sales_shift ON sales(shift_id);
-CREATE INDEX idx_sales_created ON sales(created_at);
-CREATE INDEX idx_sale_items_sale ON sale_items(sale_id);
-CREATE INDEX idx_inv_product_unit_conversions_product ON inv_product_unit_conversions(product_id, unit_id);
-CREATE INDEX idx_inv_product_selling_units_product ON inv_product_selling_units(product_id, is_default, sort_order);
+DROP TABLE IF EXISTS `pos_sequences`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_sequences` (
+  `seq_name` varchar(50) NOT NULL,
+  `seq_value` bigint NOT NULL DEFAULT '0',
+  PRIMARY KEY (`seq_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- ============================================================
--- Migration: ALTER TABLE statements for existing databases
--- Run these once on any database created from an older schema.
--- ============================================================
+--
+-- Table structure for table `pos_shifts`
+--
 
--- bank_transactions: add check/disbursement linkage + soft-delete
-ALTER TABLE bank_transactions
-  MODIFY COLUMN transaction_type VARCHAR(30) NOT NULL,
-  ADD COLUMN IF NOT EXISTS check_id         CHAR(36)   NULL AFTER source_transaction_id,
-  ADD COLUMN IF NOT EXISTS disbursement_id  CHAR(36)   NULL AFTER check_id,
-  ADD COLUMN IF NOT EXISTS is_deleted       TINYINT(1) NOT NULL DEFAULT 0 AFTER disbursement_id;
+DROP TABLE IF EXISTS `pos_shifts`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_shifts` (
+  `shift_id` char(36) NOT NULL DEFAULT (uuid()),
+  `terminal_id` char(36) NOT NULL,
+  `cashier_id` char(36) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `shift_date` date NOT NULL,
+  `business_date` date DEFAULT NULL,
+  `status` varchar(10) NOT NULL DEFAULT 'open',
+  `opening_cash` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `notes` text,
+  `expected_cash` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `actual_cash` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `over_short` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `opened_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `closed_at` datetime DEFAULT NULL,
+  `closed_by` char(36) DEFAULT NULL,
+  `z_reading_posted_at` datetime DEFAULT NULL,
+  `z_reading_posted_by` char(36) DEFAULT NULL,
+  `z_reading_reset_at` datetime DEFAULT NULL,
+  `z_reading_reset_by` char(36) DEFAULT NULL,
+  `z_reading_reset_reason` text,
+  PRIMARY KEY (`shift_id`),
+  UNIQUE KEY `uq_open_shift` (`cashier_id`,`terminal_id`,`status`,`shift_date`),
+  KEY `terminal_id` (`terminal_id`),
+  KEY `location_id` (`location_id`),
+  CONSTRAINT `pos_shifts_ibfk_1` FOREIGN KEY (`terminal_id`) REFERENCES `pos_terminals` (`terminal_id`) ON DELETE RESTRICT,
+  CONSTRAINT `pos_shifts_ibfk_2` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `pos_shifts_chk_1` CHECK ((`status` in (_utf8mb4'open',_utf8mb4'closed')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- checks_issued: add finance-link columns
-ALTER TABLE checks_issued
-  ADD COLUMN IF NOT EXISTS check_date          DATE        NULL AFTER check_number,
-  ADD COLUMN IF NOT EXISTS notes               TEXT        NOT NULL DEFAULT '' AFTER description,
-  ADD COLUMN IF NOT EXISTS disbursement_id     CHAR(36)    NULL AFTER cleared_date,
-  ADD COLUMN IF NOT EXISTS manually_set_status TINYINT(1)  NOT NULL DEFAULT 0 AFTER disbursement_id,
-  ADD COLUMN IF NOT EXISTS is_deleted          TINYINT(1)  NOT NULL DEFAULT 0 AFTER manually_set_status;
+--
+-- Table structure for table `pos_terminals`
+--
 
--- disbursements: add payee/method/notes/soft-delete
-ALTER TABLE disbursements
-  ADD COLUMN IF NOT EXISTS payee          VARCHAR(255) NOT NULL DEFAULT '' AFTER date,
-  ADD COLUMN IF NOT EXISTS purpose        TEXT         NOT NULL DEFAULT '' AFTER payee,
-  ADD COLUMN IF NOT EXISTS payment_method VARCHAR(50)  NOT NULL DEFAULT 'cash' AFTER purpose,
-  ADD COLUMN IF NOT EXISTS check_number   VARCHAR(100) NOT NULL DEFAULT '' AFTER payment_method,
-  ADD COLUMN IF NOT EXISTS notes          TEXT         NOT NULL DEFAULT '' AFTER check_number,
-  ADD COLUMN IF NOT EXISTS is_deleted     TINYINT(1)   NOT NULL DEFAULT 0 AFTER notes,
-  ADD COLUMN IF NOT EXISTS source_module  VARCHAR(60)  NULL AFTER disbursement_type,
-  ADD COLUMN IF NOT EXISTS source_reference_id CHAR(36) NULL AFTER source_module,
-  ADD COLUMN IF NOT EXISTS source_account_type VARCHAR(30) NULL AFTER source_reference_id,
-  ADD COLUMN IF NOT EXISTS source_account_id CHAR(36) NULL AFTER source_account_type;
+DROP TABLE IF EXISTS `pos_terminals`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_terminals` (
+  `terminal_id` char(36) NOT NULL DEFAULT (uuid()),
+  `terminal_code` varchar(20) NOT NULL,
+  `terminal_name` varchar(100) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`terminal_id`),
+  UNIQUE KEY `terminal_code` (`terminal_code`),
+  KEY `location_id` (`location_id`),
+  CONSTRAINT `pos_terminals_ibfk_1` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- daily_sales: add manual P&L + POS sync columns
-ALTER TABLE daily_sales
-  ADD COLUMN IF NOT EXISTS sales           DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER date,
-  ADD COLUMN IF NOT EXISTS cost_of_sales   DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER sales,
-  ADD COLUMN IF NOT EXISTS description     TEXT          NOT NULL DEFAULT '' AFTER cost_of_sales,
-  ADD COLUMN IF NOT EXISTS total_pos_sales DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER description,
-  ADD COLUMN IF NOT EXISTS cash_pos_sales  DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER total_pos_sales,
-  ADD COLUMN IF NOT EXISTS gcash_pos_sales DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER cash_pos_sales,
-  ADD COLUMN IF NOT EXISTS card_pos_sales  DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER gcash_pos_sales,
-  ADD COLUMN IF NOT EXISTS pos_synced_at   DATETIME      NULL AFTER card_pos_sales,
-  ADD COLUMN IF NOT EXISTS is_deleted      TINYINT(1)    NOT NULL DEFAULT 0 AFTER pos_synced_at;
+--
+-- Table structure for table `pos_zreading_resets`
+--
 
-ALTER TABLE pos_shifts
-  ADD COLUMN IF NOT EXISTS business_date           DATE          NULL AFTER shift_date,
-  ADD COLUMN IF NOT EXISTS notes                   TEXT          NULL AFTER opening_cash,
-  ADD COLUMN IF NOT EXISTS closed_by               CHAR(36)      NULL AFTER closed_at,
-  ADD COLUMN IF NOT EXISTS z_reading_posted_at     DATETIME      NULL AFTER closed_by,
-  ADD COLUMN IF NOT EXISTS z_reading_posted_by     CHAR(36)      NULL AFTER z_reading_posted_at,
-  ADD COLUMN IF NOT EXISTS z_reading_reset_at      DATETIME      NULL AFTER z_reading_posted_by,
-  ADD COLUMN IF NOT EXISTS z_reading_reset_by      CHAR(36)      NULL AFTER z_reading_reset_at,
-  ADD COLUMN IF NOT EXISTS z_reading_reset_reason  TEXT          NULL AFTER z_reading_reset_by;
+DROP TABLE IF EXISTS `pos_zreading_resets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `pos_zreading_resets` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `shift_id` char(36) NOT NULL,
+  `terminal_id` char(36) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `business_date` date NOT NULL,
+  `reset_by` char(36) NOT NULL,
+  `reason` text NOT NULL,
+  `reset_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_pos_zreading_resets_shift` (`shift_id`),
+  KEY `idx_pos_zreading_resets_date` (`business_date`),
+  KEY `idx_pos_zreading_resets_reset_at` (`reset_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- cashier_remittances: add source/dest routing + shift linkage + soft-delete
-ALTER TABLE cashier_remittances
-  ADD COLUMN IF NOT EXISTS source_type         VARCHAR(30)   NOT NULL DEFAULT 'gcash' AFTER cashier_id,
-  ADD COLUMN IF NOT EXISTS source_account_id   CHAR(36)      NULL AFTER source_type,
-  ADD COLUMN IF NOT EXISTS source_bank_id      CHAR(36)      NULL AFTER source_account_id,
-  ADD COLUMN IF NOT EXISTS destination_type    VARCHAR(30)   NOT NULL DEFAULT 'bank' AFTER source_account_id,
-  ADD COLUMN IF NOT EXISTS destination_bank_id CHAR(36)      NULL AFTER destination_type,
-  ADD COLUMN IF NOT EXISTS destination_account_id CHAR(36)   NULL AFTER destination_bank_id,
-  ADD COLUMN IF NOT EXISTS bank_fee            DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER amount,
-  ADD COLUMN IF NOT EXISTS reference_number    VARCHAR(255)  NOT NULL DEFAULT '' AFTER description,
-  ADD COLUMN IF NOT EXISTS attachment_reference VARCHAR(255) NULL AFTER reference_number,
-  ADD COLUMN IF NOT EXISTS source_transaction_id CHAR(36)    NULL AFTER attachment_reference,
-  ADD COLUMN IF NOT EXISTS destination_transaction_id CHAR(36) NULL AFTER source_transaction_id,
-  ADD COLUMN IF NOT EXISTS notes               TEXT          NOT NULL DEFAULT '' AFTER bank_fee,
-  ADD COLUMN IF NOT EXISTS is_deleted          TINYINT(1)    NOT NULL DEFAULT 0 AFTER updated_at,
-  ADD COLUMN IF NOT EXISTS created_by          CHAR(36)      NULL AFTER is_deleted;
+--
+-- Table structure for table `product_lots`
+--
 
--- bank_accounts / bank_transactions / bank_deposits: support ledger-derived monitoring
-ALTER TABLE bank_accounts
-  ADD COLUMN IF NOT EXISTS beginning_balance   DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER account_number;
+DROP TABLE IF EXISTS `product_lots`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `product_lots` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `product_id` char(36) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `receiving_item_id` char(36) DEFAULT NULL,
+  `batch_number` varchar(100) NOT NULL DEFAULT '',
+  `expiry_date` date DEFAULT NULL,
+  `qty_on_hand` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `product_id` (`product_id`),
+  KEY `location_id` (`location_id`),
+  KEY `receiving_item_id` (`receiving_item_id`),
+  CONSTRAINT `product_lots_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `product_lots_ibfk_2` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `product_lots_ibfk_3` FOREIGN KEY (`receiving_item_id`) REFERENCES `receiving_items` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-ALTER TABLE bank_transactions
-  ADD COLUMN IF NOT EXISTS direction           VARCHAR(10)   NOT NULL DEFAULT 'debit' AFTER amount,
-  ADD COLUMN IF NOT EXISTS notes               TEXT          NULL AFTER description,
-  ADD COLUMN IF NOT EXISTS payable_id          CHAR(36)      NULL AFTER check_id,
-  ADD COLUMN IF NOT EXISTS balance_after       DECIMAL(12,2) NULL AFTER payable_id,
-  ADD COLUMN IF NOT EXISTS module_source       VARCHAR(50)   NULL AFTER balance_after,
-  ADD COLUMN IF NOT EXISTS attachment_reference VARCHAR(255) NULL AFTER module_source,
-  ADD COLUMN IF NOT EXISTS updated_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at;
+--
+-- Table structure for table `profiles`
+--
 
-ALTER TABLE bank_deposits
-  ADD COLUMN IF NOT EXISTS notes               TEXT          NULL AFTER source_description,
-  ADD COLUMN IF NOT EXISTS source_type         VARCHAR(50)   NOT NULL DEFAULT '' AFTER reference_number,
-  ADD COLUMN IF NOT EXISTS cashier_remittance_id CHAR(36)    NULL AFTER source_transaction_id,
-  ADD COLUMN IF NOT EXISTS source_module       VARCHAR(50)   NULL AFTER cashier_remittance_id,
-  ADD COLUMN IF NOT EXISTS attachment_reference VARCHAR(255) NULL AFTER source_module,
-  ADD COLUMN IF NOT EXISTS updated_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at,
-  ADD COLUMN IF NOT EXISTS is_deleted          TINYINT(1)    NOT NULL DEFAULT 0 AFTER updated_at;
+DROP TABLE IF EXISTS `profiles`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `profiles` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `role` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'staff',
+  `status` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'active',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `last_login` datetime DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  CONSTRAINT `profiles_role_chk` CHECK ((`role` in (_utf8mb4'admin',_utf8mb4'staff',_utf8mb4'cashier')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-ALTER TABLE transactions
-  ADD COLUMN IF NOT EXISTS transaction_category VARCHAR(30)  NOT NULL DEFAULT 'regular' AFTER transaction_type,
-  ADD COLUMN IF NOT EXISTS source_module       VARCHAR(60)   NULL AFTER bank_account_id,
-  ADD COLUMN IF NOT EXISTS source_reference_id CHAR(36)      NULL AFTER source_module,
-  ADD COLUMN IF NOT EXISTS disbursement_id     CHAR(36)      NULL AFTER reversal_of_transaction_id,
-  ADD COLUMN IF NOT EXISTS cleared_at          DATETIME      NULL AFTER is_closed;
+--
+-- Table structure for table `purchase_order_items`
+--
 
-ALTER TABLE cash_transactions
-  ADD COLUMN IF NOT EXISTS transaction_category VARCHAR(30)  NOT NULL DEFAULT 'regular' AFTER transaction_type,
-  ADD COLUMN IF NOT EXISTS source_module       VARCHAR(60)   NULL AFTER cash_out_type,
-  ADD COLUMN IF NOT EXISTS source_reference_id CHAR(36)      NULL AFTER source_module,
-  ADD COLUMN IF NOT EXISTS disbursement_id     CHAR(36)      NULL AFTER source_reference_id,
-  ADD COLUMN IF NOT EXISTS cleared_at          DATETIME      NULL AFTER is_closed;
+DROP TABLE IF EXISTS `purchase_order_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `purchase_order_items` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `po_id` char(36) NOT NULL,
+  `product_id` char(36) NOT NULL,
+  `qty_ordered` decimal(12,3) NOT NULL,
+  `qty_received` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `unit_cost` decimal(12,6) NOT NULL DEFAULT '0.000000',
+  `subtotal` decimal(12,6) NOT NULL DEFAULT '0.000000',
+  `notes` text NOT NULL,
+  `sort_order` int NOT NULL DEFAULT '0',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `purchase_unit_id` char(36) DEFAULT NULL,
+  `purchase_unit_name` varchar(100) NOT NULL DEFAULT '',
+  `qty_in_base_unit_per_purchase` decimal(18,6) NOT NULL DEFAULT '1.000000',
+  `qty_ordered_in_base_unit` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `qty_received_in_base_unit` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `cost_per_base_unit` decimal(12,6) NOT NULL DEFAULT '0.000000',
+  PRIMARY KEY (`id`),
+  KEY `po_id` (`po_id`),
+  KEY `product_id` (`product_id`),
+  CONSTRAINT `purchase_order_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-ALTER TABLE daily_history
-  ADD COLUMN IF NOT EXISTS transaction_count   INT           NOT NULL DEFAULT 0 AFTER total_delivery_fee;
+--
+-- Table structure for table `purchase_orders`
+--
 
-ALTER TABLE cash_daily_history
-  ADD COLUMN IF NOT EXISTS total_cash_in       DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER beginning_balance,
-  ADD COLUMN IF NOT EXISTS total_cash_out      DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER total_cash_in,
-  ADD COLUMN IF NOT EXISTS transaction_count   INT           NOT NULL DEFAULT 0 AFTER total_cash_out,
-  ADD COLUMN IF NOT EXISTS cash_fees_collected DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER transaction_count,
-  ADD COLUMN IF NOT EXISTS cash_given_out      DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER cash_fees_collected,
-  ADD COLUMN IF NOT EXISTS cash_out_to_fund    DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER cash_given_out,
-  ADD COLUMN IF NOT EXISTS bank_deposits       DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER cash_out_to_fund,
-  ADD COLUMN IF NOT EXISTS cash_fund_disbursements DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER bank_deposits,
-  ADD COLUMN IF NOT EXISTS posted_at           DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER posted_by;
+DROP TABLE IF EXISTS `purchase_orders`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `purchase_orders` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `po_number` varchar(50) NOT NULL,
+  `supplier_id` char(36) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'draft',
+  `order_date` date NOT NULL DEFAULT (curdate()),
+  `expected_date` date DEFAULT NULL,
+  `notes` text NOT NULL,
+  `total_amount` decimal(12,6) NOT NULL DEFAULT '0.000000',
+  `approved_by` char(36) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `po_number` (`po_number`),
+  KEY `supplier_id` (`supplier_id`),
+  KEY `location_id` (`location_id`),
+  CONSTRAINT `purchase_orders_ibfk_2` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `purchase_orders_chk_1` CHECK ((`status` in (_utf8mb4'draft',_utf8mb4'submitted',_utf8mb4'approved',_utf8mb4'partially_received',_utf8mb4'fully_received',_utf8mb4'cancelled')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- checks + payable payments: add payment linkage metadata for AP and bank monitoring
-ALTER TABLE checks_issued
-  ADD COLUMN IF NOT EXISTS payable_id          CHAR(36)      NULL AFTER supplier_id,
-  ADD COLUMN IF NOT EXISTS attachment_reference VARCHAR(255) NULL AFTER notes;
+--
+-- Table structure for table `receiving_items`
+--
 
-ALTER TABLE payable_payments
-  ADD COLUMN IF NOT EXISTS reference_number    VARCHAR(100)  NOT NULL DEFAULT '' AFTER payment_method,
-  ADD COLUMN IF NOT EXISTS remarks             TEXT          NULL AFTER reference_number,
-  ADD COLUMN IF NOT EXISTS bank_account_id     CHAR(36)      NULL AFTER remarks,
-  ADD COLUMN IF NOT EXISTS check_id            CHAR(36)      NULL AFTER bank_account_id,
-  ADD COLUMN IF NOT EXISTS bank_transaction_id CHAR(36)      NULL AFTER check_id,
-  ADD COLUMN IF NOT EXISTS attachment_reference VARCHAR(255) NULL AFTER bank_transaction_id,
-  ADD COLUMN IF NOT EXISTS approval_required   TINYINT(1)    NOT NULL DEFAULT 0 AFTER attachment_reference,
-  ADD COLUMN IF NOT EXISTS approval_status     VARCHAR(20)   NOT NULL DEFAULT 'approved' AFTER approval_required,
-  ADD COLUMN IF NOT EXISTS approved_by         CHAR(36)      NULL AFTER approval_status,
-  ADD COLUMN IF NOT EXISTS approved_at         DATETIME      NULL AFTER approved_by,
-  ADD COLUMN IF NOT EXISTS updated_at          DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at;
+DROP TABLE IF EXISTS `receiving_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `receiving_items` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `receiving_id` char(36) NOT NULL,
+  `po_item_id` char(36) DEFAULT NULL,
+  `product_id` char(36) NOT NULL,
+  `qty_received` decimal(12,3) NOT NULL,
+  `qty_rejected` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `unit_cost` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `expiry_date` date DEFAULT NULL,
+  `batch_number` varchar(100) NOT NULL DEFAULT '',
+  `qty_ordered` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `qty_prev_received` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `qty_remaining` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `qty_accepted` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `purchase_unit_id` char(36) DEFAULT NULL,
+  `purchase_unit_name` varchar(100) NOT NULL DEFAULT '',
+  `qty_in_base_unit_per_purchase` decimal(18,6) NOT NULL DEFAULT '1.000000',
+  `qty_received_in_base_unit` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `qty_accepted_in_base_unit` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `qty_rejected_in_base_unit` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `unit_cost_per_base` decimal(12,6) NOT NULL DEFAULT '0.000000',
+  PRIMARY KEY (`id`),
+  KEY `receiving_id` (`receiving_id`),
+  KEY `po_item_id` (`po_item_id`),
+  KEY `product_id` (`product_id`),
+  CONSTRAINT `receiving_items_ibfk_2` FOREIGN KEY (`po_item_id`) REFERENCES `purchase_order_items` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `receiving_items_ibfk_3` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-ALTER TABLE bank_deposits
-  ADD COLUMN IF NOT EXISTS status              VARCHAR(20)   NOT NULL DEFAULT 'verified' AFTER notes,
-  ADD COLUMN IF NOT EXISTS deposited_at        DATETIME      NULL AFTER status,
-  ADD COLUMN IF NOT EXISTS verified_at         DATETIME      NULL AFTER deposited_at,
-  ADD COLUMN IF NOT EXISTS verified_by         CHAR(36)      NULL AFTER verified_at,
-  ADD COLUMN IF NOT EXISTS cancelled_at        DATETIME      NULL AFTER verified_by;
+--
+-- Table structure for table `receivings`
+--
 
-ALTER TABLE checks_issued
-  ADD COLUMN IF NOT EXISTS approval_required   TINYINT(1)    NOT NULL DEFAULT 0 AFTER manually_set_status,
-  ADD COLUMN IF NOT EXISTS approval_status     VARCHAR(20)   NOT NULL DEFAULT 'approved' AFTER approval_required,
-  ADD COLUMN IF NOT EXISTS approved_by         CHAR(36)      NULL AFTER approval_status,
-  ADD COLUMN IF NOT EXISTS approved_at         DATETIME      NULL AFTER approved_by,
-  ADD COLUMN IF NOT EXISTS rejected_reason     TEXT          NULL AFTER approved_at;
+DROP TABLE IF EXISTS `receivings`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `receivings` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `receiving_number` varchar(50) NOT NULL DEFAULT '',
+  `po_id` char(36) NOT NULL,
+  `supplier_id` char(36) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `status` varchar(20) NOT NULL DEFAULT 'draft',
+  `receiving_date` date NOT NULL DEFAULT (curdate()),
+  `invoice_number` varchar(100) NOT NULL DEFAULT '',
+  `dr_number` varchar(100) NOT NULL DEFAULT '',
+  `remarks` text NOT NULL,
+  `posted_by` char(36) DEFAULT NULL,
+  `posted_at` datetime DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `receiving_number` (`receiving_number`),
+  KEY `po_id` (`po_id`),
+  KEY `supplier_id` (`supplier_id`),
+  KEY `location_id` (`location_id`),
+  CONSTRAINT `receivings_ibfk_1` FOREIGN KEY (`po_id`) REFERENCES `purchase_orders` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `receivings_ibfk_3` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `receivings_chk_1` CHECK ((`status` in (_utf8mb4'draft',_utf8mb4'posted',_utf8mb4'cancelled')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-ALTER TABLE cashier_remittances
-  ADD COLUMN IF NOT EXISTS approval_required   TINYINT(1)    NOT NULL DEFAULT 0 AFTER destination_transaction_id,
-  ADD COLUMN IF NOT EXISTS approval_status     VARCHAR(20)   NOT NULL DEFAULT 'approved' AFTER approval_required,
-  ADD COLUMN IF NOT EXISTS approved_by         CHAR(36)      NULL AFTER approval_status,
-  ADD COLUMN IF NOT EXISTS approved_at         DATETIME      NULL AFTER approved_by;
+--
+-- Table structure for table `recurring_obligations`
+--
 
-CREATE TABLE IF NOT EXISTS recurring_obligations (
-  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  name VARCHAR(150) NOT NULL,
-  category VARCHAR(80) NOT NULL DEFAULT 'general',
-  default_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-  frequency VARCHAR(20) NOT NULL DEFAULT 'monthly',
-  due_date_rule VARCHAR(120) NOT NULL DEFAULT '',
-  next_due_date DATE NOT NULL,
-  is_active TINYINT(1) NOT NULL DEFAULT 1,
-  remarks TEXT NULL,
-  paid_transaction_id CHAR(36) NULL,
-  paid_disbursement_id CHAR(36) NULL,
-  last_paid_date DATE NULL,
-  last_paid_amount DECIMAL(12,2) NULL,
-  created_by CHAR(36) NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+DROP TABLE IF EXISTS `recurring_obligations`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `recurring_obligations` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `name` varchar(150) NOT NULL,
+  `category` varchar(80) NOT NULL DEFAULT 'general',
+  `default_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `frequency` varchar(20) NOT NULL DEFAULT 'monthly',
+  `due_date_rule` varchar(120) NOT NULL DEFAULT '',
+  `next_due_date` date NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `remarks` text,
+  `paid_transaction_id` char(36) DEFAULT NULL,
+  `paid_disbursement_id` char(36) DEFAULT NULL,
+  `last_paid_date` date DEFAULT NULL,
+  `last_paid_amount` decimal(12,2) DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE IF NOT EXISTS bank_reconciliations (
-  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  bank_account_id CHAR(36) NOT NULL,
-  statement_date DATE NOT NULL,
-  statement_ending_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
-  system_book_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
-  uncleared_checks_total DECIMAL(12,2) NOT NULL DEFAULT 0,
-  deposits_in_transit_total DECIMAL(12,2) NOT NULL DEFAULT 0,
-  adjusted_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
-  variance DECIMAL(12,2) NOT NULL DEFAULT 0,
-  remarks TEXT NULL,
-  status VARCHAR(20) NOT NULL DEFAULT 'draft',
-  created_by CHAR(36) NULL,
-  reviewed_by CHAR(36) NULL,
-  reviewed_at DATETIME NULL,
-  finalized_by CHAR(36) NULL,
-  finalized_at DATETIME NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+--
+-- Table structure for table `sale_items`
+--
 
-CREATE TABLE IF NOT EXISTS finance_owners (
-  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  name VARCHAR(120) NOT NULL,
-  remarks TEXT NULL,
-  is_active TINYINT(1) NOT NULL DEFAULT 1,
-  created_by CHAR(36) NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+DROP TABLE IF EXISTS `sale_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sale_items` (
+  `item_id` char(36) NOT NULL DEFAULT (uuid()),
+  `sale_id` char(36) NOT NULL,
+  `product_id` char(36) DEFAULT NULL,
+  `barcode` varchar(100) NOT NULL DEFAULT '',
+  `sku_code` varchar(100) NOT NULL DEFAULT '',
+  `product_name_snapshot` varchar(255) NOT NULL DEFAULT '',
+  `qty` decimal(12,4) NOT NULL,
+  `retail_unit_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `unit_price` decimal(12,2) NOT NULL,
+  `wholesale_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `wholesale_break_qty_in_base_unit` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `wholesale_block_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `wholesale_blocks_applied` int NOT NULL DEFAULT '0',
+  `wholesale_base_qty_applied` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `retail_remainder_base_qty` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `pricing_breakdown` varchar(255) NOT NULL DEFAULT '',
+  `selected_price_level` varchar(20) NOT NULL DEFAULT 'Retail',
+  `applied_price_level` varchar(20) NOT NULL DEFAULT 'Retail',
+  `price_source` varchar(30) NOT NULL DEFAULT 'Retail',
+  `cost_at_sale` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `selected_unit_id` char(36) DEFAULT NULL,
+  `selected_unit_name` varchar(100) NOT NULL DEFAULT '',
+  `qty_in_base_unit_per_unit` decimal(18,6) NOT NULL DEFAULT '1.000000',
+  `total_base_qty_deducted` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `base_unit_name` varchar(100) NOT NULL DEFAULT '',
+  `cost_per_base_unit` decimal(12,6) NOT NULL DEFAULT '0.000000',
+  PRIMARY KEY (`item_id`),
+  KEY `idx_sale_items_sale` (`sale_id`),
+  CONSTRAINT `sale_items_ibfk_1` FOREIGN KEY (`sale_id`) REFERENCES `sales` (`sale_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-CREATE TABLE IF NOT EXISTS finance_owner_movements (
-  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  date DATE NOT NULL,
-  movement_type VARCHAR(20) NOT NULL DEFAULT 'funding',
-  target_module VARCHAR(20) NOT NULL DEFAULT 'bank',
-  owner_id CHAR(36) NULL,
-  bank_account_id CHAR(36) NULL,
-  account_id CHAR(36) NULL,
-  amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-  reference_number VARCHAR(120) NOT NULL DEFAULT '',
-  remarks TEXT NULL,
-  attachment_reference VARCHAR(255) NULL,
-  approval_required TINYINT(1) NOT NULL DEFAULT 0,
-  approval_status VARCHAR(20) NOT NULL DEFAULT 'approved',
-  approved_by CHAR(36) NULL,
-  approved_at DATETIME NULL,
-  posted_bank_transaction_id CHAR(36) NULL,
-  posted_transaction_id CHAR(36) NULL,
-  posted_cash_transaction_id CHAR(36) NULL,
-  owner_ledger_id CHAR(36) NULL,
-  created_by CHAR(36) NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+--
+-- Table structure for table `sale_payments`
+--
 
-CREATE TABLE IF NOT EXISTS owner_ledger (
-  id CHAR(36) PRIMARY KEY DEFAULT (UUID()),
-  owner_id CHAR(36) NOT NULL,
-  transaction_date DATE NOT NULL,
-  transaction_type VARCHAR(60) NOT NULL,
-  reference_type VARCHAR(60) NOT NULL DEFAULT '',
-  reference_id CHAR(36) NULL,
-  source_module VARCHAR(60) NOT NULL DEFAULT '',
-  description TEXT NOT NULL,
-  increase_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-  decrease_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
-  running_balance DECIMAL(12,2) NOT NULL DEFAULT 0,
-  source_account_type VARCHAR(30) NULL,
-  source_account_id CHAR(36) NULL,
-  reference_number VARCHAR(120) NOT NULL DEFAULT '',
-  remarks TEXT NULL,
-  is_deleted TINYINT(1) NOT NULL DEFAULT 0,
-  created_by CHAR(36) NULL,
-  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  UNIQUE KEY uq_owner_ledger_reference (owner_id, transaction_type, reference_type, reference_id)
-);
+DROP TABLE IF EXISTS `sale_payments`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sale_payments` (
+  `payment_id` char(36) NOT NULL DEFAULT (uuid()),
+  `sale_id` char(36) NOT NULL,
+  `payment_method` varchar(20) NOT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `reference_no` varchar(100) NOT NULL DEFAULT '',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`payment_id`),
+  KEY `sale_id` (`sale_id`),
+  CONSTRAINT `sale_payments_ibfk_1` FOREIGN KEY (`sale_id`) REFERENCES `sales` (`sale_id`) ON DELETE CASCADE,
+  CONSTRAINT `chk_sale_payments_method` CHECK ((`payment_method` in (_utf8mb4'cash',_utf8mb4'gcash',_utf8mb4'charge')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- inv_units: add optional short label and description used by the inventory UI
-ALTER TABLE inv_units
-  ADD COLUMN IF NOT EXISTS short_name          VARCHAR(20)   NOT NULL DEFAULT '' AFTER abbreviation,
-  ADD COLUMN IF NOT EXISTS description         TEXT          NULL AFTER short_name;
+--
+-- Table structure for table `sale_return_items`
+--
 
--- inv_products: add multi-unit metadata while keeping legacy unit_id/pricing columns for compatibility
-ALTER TABLE inv_products
-  ADD COLUMN IF NOT EXISTS base_unit_id              CHAR(36)      NULL AFTER unit_id,
-  ADD COLUMN IF NOT EXISTS default_purchase_unit_id  CHAR(36)      NULL AFTER base_unit_id,
-  ADD COLUMN IF NOT EXISTS default_selling_unit_id   CHAR(36)      NULL AFTER default_purchase_unit_id,
-  ADD COLUMN IF NOT EXISTS default_cost              DECIMAL(12,2) NOT NULL DEFAULT 0 AFTER cost_price;
+DROP TABLE IF EXISTS `sale_return_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sale_return_items` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `return_id` char(36) NOT NULL,
+  `original_sale_item_id` char(36) NOT NULL,
+  `product_id` char(36) DEFAULT NULL,
+  `product_name_snapshot` varchar(255) NOT NULL DEFAULT '',
+  `sku_code` varchar(100) NOT NULL DEFAULT '',
+  `qty_returned` int NOT NULL DEFAULT '0',
+  `unit_price` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `selected_unit_id` char(36) DEFAULT NULL,
+  `selected_unit_name` varchar(100) NOT NULL DEFAULT '',
+  `qty_in_base_unit_per_unit` decimal(18,6) NOT NULL DEFAULT '1.000000',
+  `total_base_qty_restored` decimal(18,6) NOT NULL DEFAULT '0.000000',
+  `base_unit_name` varchar(100) NOT NULL DEFAULT '',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-ALTER TABLE inv_product_selling_units
-  ADD COLUMN IF NOT EXISTS wholesale_enabled              TINYINT(1)     NOT NULL DEFAULT 0 AFTER special_price,
-  ADD COLUMN IF NOT EXISTS wholesale_break_qty_in_base_unit DECIMAL(18,6) NOT NULL DEFAULT 0 AFTER wholesale_enabled,
-  ADD COLUMN IF NOT EXISTS wholesale_block_price          DECIMAL(12,2)  NOT NULL DEFAULT 0 AFTER wholesale_break_qty_in_base_unit;
+--
+-- Table structure for table `sale_returns`
+--
 
--- purchase_order_items: keep entered purchase unit and converted base quantity/cost
-ALTER TABLE purchase_order_items
-  ADD COLUMN IF NOT EXISTS purchase_unit_id                 CHAR(36)       NULL AFTER product_id,
-  ADD COLUMN IF NOT EXISTS purchase_unit_name               VARCHAR(100)   NOT NULL DEFAULT '' AFTER purchase_unit_id,
-  ADD COLUMN IF NOT EXISTS qty_in_base_unit_per_purchase    DECIMAL(18,6)  NOT NULL DEFAULT 1 AFTER purchase_unit_name,
-  ADD COLUMN IF NOT EXISTS qty_ordered_in_base_unit         DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER qty_ordered,
-  ADD COLUMN IF NOT EXISTS qty_received_in_base_unit        DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER qty_received,
-  ADD COLUMN IF NOT EXISTS cost_per_base_unit               DECIMAL(12,6)  NOT NULL DEFAULT 0 AFTER unit_cost,
-  ADD COLUMN IF NOT EXISTS sort_order                       INT            NOT NULL DEFAULT 0 AFTER notes,
-  ADD COLUMN IF NOT EXISTS created_at                       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER sort_order,
-  ADD COLUMN IF NOT EXISTS updated_at                       DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER created_at;
+DROP TABLE IF EXISTS `sale_returns`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sale_returns` (
+  `return_id` char(36) NOT NULL DEFAULT (uuid()),
+  `return_no` varchar(50) NOT NULL DEFAULT '',
+  `original_sale_id` char(36) NOT NULL,
+  `shift_id` char(36) DEFAULT NULL,
+  `terminal_id` char(36) DEFAULT NULL,
+  `location_id` char(36) DEFAULT NULL,
+  `cashier_id` char(36) DEFAULT NULL,
+  `supervisor_id` char(36) DEFAULT NULL,
+  `reason` text,
+  `refund_method` varchar(50) NOT NULL DEFAULT 'cash',
+  `total_return_amt` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `notes` text,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`return_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- receiving_items: retain entered unit and accepted/rejected base conversions for posting/audit
-ALTER TABLE receiving_items
-  ADD COLUMN IF NOT EXISTS qty_ordered                DECIMAL(12,3)  NOT NULL DEFAULT 0 AFTER product_id,
-  ADD COLUMN IF NOT EXISTS qty_prev_received          DECIMAL(12,3)  NOT NULL DEFAULT 0 AFTER qty_ordered,
-  ADD COLUMN IF NOT EXISTS qty_remaining              DECIMAL(12,3)  NOT NULL DEFAULT 0 AFTER qty_prev_received,
-  ADD COLUMN IF NOT EXISTS qty_accepted              DECIMAL(12,3)  NOT NULL DEFAULT 0 AFTER qty_received,
-  ADD COLUMN IF NOT EXISTS purchase_unit_id          CHAR(36)       NULL AFTER qty_rejected,
-  ADD COLUMN IF NOT EXISTS purchase_unit_name        VARCHAR(100)   NOT NULL DEFAULT '' AFTER purchase_unit_id,
-  ADD COLUMN IF NOT EXISTS qty_in_base_unit_per_purchase DECIMAL(18,6) NOT NULL DEFAULT 1 AFTER purchase_unit_name,
-  ADD COLUMN IF NOT EXISTS qty_received_in_base_unit DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER qty_in_base_unit_per_purchase,
-  ADD COLUMN IF NOT EXISTS qty_accepted_in_base_unit DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER qty_received_in_base_unit,
-  ADD COLUMN IF NOT EXISTS qty_rejected_in_base_unit DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER qty_accepted_in_base_unit,
-  ADD COLUMN IF NOT EXISTS unit_cost_per_base        DECIMAL(12,6)  NOT NULL DEFAULT 0 AFTER unit_cost,
-  ADD COLUMN IF NOT EXISTS notes                     TEXT           NOT NULL DEFAULT '' AFTER batch_number,
-  ADD COLUMN IF NOT EXISTS sort_order                INT            NOT NULL DEFAULT 0 AFTER notes,
-  ADD COLUMN IF NOT EXISTS updated_at                DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER sort_order,
-  ADD COLUMN IF NOT EXISTS created_at                DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP AFTER updated_at;
+--
+-- Table structure for table `sales`
+--
 
--- inventory_movements: preserve base quantity in qty_change and add display/base unit audit fields
-ALTER TABLE inventory_movements
-  ADD COLUMN IF NOT EXISTS qty_before                DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER qty_change,
-  ADD COLUMN IF NOT EXISTS unit_cost                DECIMAL(12,6)  NULL AFTER qty_after,
-  ADD COLUMN IF NOT EXISTS related_location_id      CHAR(36)       NULL AFTER ref_id,
-  ADD COLUMN IF NOT EXISTS display_unit_id          CHAR(36)       NULL AFTER related_location_id,
-  ADD COLUMN IF NOT EXISTS display_unit_name        VARCHAR(100)   NOT NULL DEFAULT '' AFTER display_unit_id,
-  ADD COLUMN IF NOT EXISTS display_qty              DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER display_unit_name,
-  ADD COLUMN IF NOT EXISTS qty_in_base_unit_per_display DECIMAL(18,6) NOT NULL DEFAULT 1 AFTER display_qty,
-  ADD COLUMN IF NOT EXISTS base_unit_id             CHAR(36)       NULL AFTER qty_in_base_unit_per_display,
-  ADD COLUMN IF NOT EXISTS base_unit_name           VARCHAR(100)   NOT NULL DEFAULT '' AFTER base_unit_id;
+DROP TABLE IF EXISTS `sales`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sales` (
+  `sale_id` char(36) NOT NULL DEFAULT (uuid()),
+  `shift_id` char(36) NOT NULL,
+  `terminal_id` char(36) NOT NULL,
+  `location_id` char(36) NOT NULL,
+  `cashier_id` char(36) NOT NULL,
+  `receipt_no` varchar(50) NOT NULL DEFAULT '',
+  `sale_status` varchar(20) NOT NULL DEFAULT 'completed',
+  `subtotal` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `discount_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `tax_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `total_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `amount_tendered` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `change_amount` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `customer_id` char(36) DEFAULT NULL,
+  `loyalty_points_earned` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `loyalty_points_redeemed` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `voided_by` char(36) DEFAULT NULL,
+  `voided_at` datetime DEFAULT NULL,
+  `void_reason` text NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`sale_id`),
+  UNIQUE KEY `receipt_no` (`receipt_no`),
+  KEY `terminal_id` (`terminal_id`),
+  KEY `location_id` (`location_id`),
+  KEY `idx_sales_shift` (`shift_id`),
+  KEY `idx_sales_created` (`created_at`),
+  CONSTRAINT `sales_ibfk_1` FOREIGN KEY (`shift_id`) REFERENCES `pos_shifts` (`shift_id`) ON DELETE RESTRICT,
+  CONSTRAINT `sales_ibfk_2` FOREIGN KEY (`terminal_id`) REFERENCES `pos_terminals` (`terminal_id`) ON DELETE RESTRICT,
+  CONSTRAINT `sales_ibfk_3` FOREIGN KEY (`location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `sales_chk_1` CHECK ((`sale_status` in (_utf8mb4'completed',_utf8mb4'held',_utf8mb4'cancelled',_utf8mb4'voided')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
--- sale_items / held_sale_items: persist selected selling unit and converted base quantities
-ALTER TABLE sale_items
-  ADD COLUMN IF NOT EXISTS selected_unit_id             CHAR(36)       NULL AFTER product_id,
-  ADD COLUMN IF NOT EXISTS selected_unit_name           VARCHAR(100)   NOT NULL DEFAULT '' AFTER selected_unit_id,
-  ADD COLUMN IF NOT EXISTS qty_in_base_unit_per_unit    DECIMAL(18,6)  NOT NULL DEFAULT 1 AFTER qty,
-  ADD COLUMN IF NOT EXISTS total_base_qty_deducted      DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER qty_in_base_unit_per_unit,
-  ADD COLUMN IF NOT EXISTS base_unit_name               VARCHAR(100)   NOT NULL DEFAULT '' AFTER total_base_qty_deducted,
-  ADD COLUMN IF NOT EXISTS cost_per_base_unit           DECIMAL(12,6)  NOT NULL DEFAULT 0 AFTER cost_at_sale,
-  ADD COLUMN IF NOT EXISTS wholesale_enabled            TINYINT(1)     NOT NULL DEFAULT 0 AFTER unit_price,
-  ADD COLUMN IF NOT EXISTS wholesale_break_qty_in_base_unit DECIMAL(18,6) NOT NULL DEFAULT 0 AFTER wholesale_enabled,
-  ADD COLUMN IF NOT EXISTS wholesale_block_price        DECIMAL(12,2)  NOT NULL DEFAULT 0 AFTER wholesale_break_qty_in_base_unit,
-  ADD COLUMN IF NOT EXISTS wholesale_blocks_applied     INT            NOT NULL DEFAULT 0 AFTER wholesale_block_price,
-  ADD COLUMN IF NOT EXISTS wholesale_base_qty_applied   DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER wholesale_blocks_applied,
-  ADD COLUMN IF NOT EXISTS retail_remainder_base_qty    DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER wholesale_base_qty_applied,
-  ADD COLUMN IF NOT EXISTS pricing_breakdown            VARCHAR(255)   NOT NULL DEFAULT '' AFTER retail_remainder_base_qty;
+--
+-- Table structure for table `sss_table`
+--
 
-ALTER TABLE held_sale_items
-  ADD COLUMN IF NOT EXISTS selected_unit_id             CHAR(36)       NULL AFTER product_id,
-  ADD COLUMN IF NOT EXISTS selected_unit_name           VARCHAR(100)   NOT NULL DEFAULT '' AFTER selected_unit_id,
-  ADD COLUMN IF NOT EXISTS qty_in_base_unit_per_unit    DECIMAL(18,6)  NOT NULL DEFAULT 1 AFTER qty,
-  ADD COLUMN IF NOT EXISTS total_base_qty_deducted      DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER qty_in_base_unit_per_unit,
-  ADD COLUMN IF NOT EXISTS base_unit_name               VARCHAR(100)   NOT NULL DEFAULT '' AFTER total_base_qty_deducted,
-  ADD COLUMN IF NOT EXISTS wholesale_enabled            TINYINT(1)     NOT NULL DEFAULT 0 AFTER unit_price,
-  ADD COLUMN IF NOT EXISTS wholesale_break_qty_in_base_unit DECIMAL(18,6) NOT NULL DEFAULT 0 AFTER wholesale_enabled,
-  ADD COLUMN IF NOT EXISTS wholesale_block_price        DECIMAL(12,2)  NOT NULL DEFAULT 0 AFTER wholesale_break_qty_in_base_unit,
-  ADD COLUMN IF NOT EXISTS wholesale_blocks_applied     INT            NOT NULL DEFAULT 0 AFTER wholesale_block_price,
-  ADD COLUMN IF NOT EXISTS wholesale_base_qty_applied   DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER wholesale_blocks_applied,
-  ADD COLUMN IF NOT EXISTS retail_remainder_base_qty    DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER wholesale_base_qty_applied,
-  ADD COLUMN IF NOT EXISTS pricing_breakdown            VARCHAR(255)   NOT NULL DEFAULT '' AFTER retail_remainder_base_qty;
+DROP TABLE IF EXISTS `sss_table`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `sss_table` (
+  `id` varchar(36) NOT NULL,
+  `range_from` decimal(12,2) NOT NULL,
+  `range_to` decimal(12,2) NOT NULL,
+  `monthly_salary_credit` decimal(12,2) NOT NULL,
+  `employee_share` decimal(10,2) NOT NULL,
+  `employer_share` decimal(10,2) NOT NULL,
+  `total_contribution` decimal(10,2) NOT NULL,
+  `effective_year` int NOT NULL DEFAULT '2024',
+  `is_active` tinyint(1) DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-ALTER TABLE sale_return_items
-  ADD COLUMN IF NOT EXISTS selected_unit_id             CHAR(36)       NULL AFTER product_id,
-  ADD COLUMN IF NOT EXISTS selected_unit_name           VARCHAR(100)   NOT NULL DEFAULT '' AFTER selected_unit_id,
-  ADD COLUMN IF NOT EXISTS qty_in_base_unit_per_unit    DECIMAL(18,6)  NOT NULL DEFAULT 1 AFTER qty_returned,
-  ADD COLUMN IF NOT EXISTS total_base_qty_restored      DECIMAL(18,6)  NOT NULL DEFAULT 0 AFTER qty_in_base_unit_per_unit,
-  ADD COLUMN IF NOT EXISTS base_unit_name               VARCHAR(100)   NOT NULL DEFAULT '' AFTER total_base_qty_restored;
+--
+-- Table structure for table `stock_transfer_items`
+--
 
--- Backfill authoritative unit columns from the legacy single-unit model
-UPDATE inv_products
-SET
-  base_unit_id = COALESCE(base_unit_id, unit_id),
-  default_purchase_unit_id = COALESCE(default_purchase_unit_id, unit_id),
-  default_cost = CASE
-    WHEN default_cost = 0 THEN COALESCE(cost_price, 0)
-    ELSE default_cost
-  END
-WHERE base_unit_id IS NULL OR default_purchase_unit_id IS NULL OR default_cost = 0;
+DROP TABLE IF EXISTS `stock_transfer_items`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `stock_transfer_items` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `transfer_id` char(36) NOT NULL,
+  `product_id` char(36) NOT NULL,
+  `qty_requested` decimal(12,3) NOT NULL,
+  `qty_issued` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `qty_received` decimal(12,3) NOT NULL DEFAULT '0.000',
+  `notes` text NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `transfer_id` (`transfer_id`),
+  KEY `product_id` (`product_id`),
+  CONSTRAINT `stock_transfer_items_ibfk_2` FOREIGN KEY (`product_id`) REFERENCES `inv_products` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-INSERT IGNORE INTO inv_product_unit_conversions (
-  id, product_id, unit_id, equivalent_qty_in_base_unit, allow_purchase, allow_sale, sort_order
-)
-SELECT
-  UUID(),
-  p.id,
-  COALESCE(p.base_unit_id, p.unit_id),
-  1,
-  1,
-  1,
-  0
-FROM inv_products p
-WHERE COALESCE(p.base_unit_id, p.unit_id) IS NOT NULL;
+--
+-- Table structure for table `stock_transfers`
+--
 
-INSERT IGNORE INTO inv_product_selling_units (
-  id, product_id, unit_id, qty_in_base_unit, selling_price, retail_price, wholesale_price, special_price, is_default, sort_order
-)
-SELECT
-  UUID(),
-  p.id,
-  COALESCE(p.base_unit_id, p.unit_id),
-  1,
-  COALESCE(NULLIF(p.retail_price, 0), p.selling_price, 0),
-  COALESCE(NULLIF(p.retail_price, 0), p.selling_price, 0),
-  COALESCE(p.wholesale_price, 0),
-  COALESCE(p.special_price, 0),
-  1,
-  0
-FROM inv_products p
-WHERE COALESCE(p.base_unit_id, p.unit_id) IS NOT NULL;
+DROP TABLE IF EXISTS `stock_transfers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `stock_transfers` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `transfer_number` varchar(50) NOT NULL,
+  `source_location_id` char(36) NOT NULL,
+  `destination_location_id` char(36) NOT NULL,
+  `status` varchar(30) NOT NULL DEFAULT 'draft',
+  `transfer_date` date NOT NULL DEFAULT (curdate()),
+  `expected_date` date DEFAULT NULL,
+  `notes` text NOT NULL,
+  `approved_by` char(36) DEFAULT NULL,
+  `approved_at` datetime DEFAULT NULL,
+  `issued_by` char(36) DEFAULT NULL,
+  `issued_at` datetime DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `updated_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `transfer_number` (`transfer_number`),
+  KEY `source_location_id` (`source_location_id`),
+  KEY `destination_location_id` (`destination_location_id`),
+  CONSTRAINT `stock_transfers_ibfk_1` FOREIGN KEY (`source_location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `stock_transfers_ibfk_2` FOREIGN KEY (`destination_location_id`) REFERENCES `inv_locations` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `stock_transfers_chk_1` CHECK ((`status` in (_cp850'draft',_cp850'approved',_cp850'issued',_cp850'partially_received',_cp850'fully_received',_cp850'cancelled'))),
+  CONSTRAINT `stock_transfers_chk_2` CHECK ((`source_location_id` <> `destination_location_id`))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-UPDATE inv_products p
-LEFT JOIN inv_product_selling_units su
-  ON su.product_id = p.id AND su.is_default = 1
-SET
-  p.default_selling_unit_id = COALESCE(p.default_selling_unit_id, su.id),
-  p.unit_id = COALESCE(p.base_unit_id, p.unit_id)
-WHERE COALESCE(p.base_unit_id, p.unit_id) IS NOT NULL;
+--
+-- Table structure for table `suppliers`
+--
 
-UPDATE purchase_order_items
-SET
-  purchase_unit_id = COALESCE(purchase_unit_id, (SELECT default_purchase_unit_id FROM inv_products p WHERE p.id = purchase_order_items.product_id LIMIT 1)),
-  purchase_unit_name = CASE
-    WHEN purchase_unit_name != '' THEN purchase_unit_name
-    ELSE COALESCE((SELECT u.name FROM inv_products p LEFT JOIN inv_units u ON u.id = COALESCE(p.default_purchase_unit_id, p.unit_id) WHERE p.id = purchase_order_items.product_id LIMIT 1), '')
-  END,
-  qty_in_base_unit_per_purchase = CASE
-    WHEN qty_in_base_unit_per_purchase > 0 THEN qty_in_base_unit_per_purchase
-    ELSE 1
-  END,
-  qty_ordered_in_base_unit = CASE
-    WHEN qty_ordered_in_base_unit > 0 THEN qty_ordered_in_base_unit
-    ELSE qty_ordered * GREATEST(qty_in_base_unit_per_purchase, 1)
-  END,
-  qty_received_in_base_unit = CASE
-    WHEN qty_received_in_base_unit > 0 THEN qty_received_in_base_unit
-    ELSE qty_received * GREATEST(qty_in_base_unit_per_purchase, 1)
-  END,
-  cost_per_base_unit = CASE
-    WHEN cost_per_base_unit > 0 THEN cost_per_base_unit
-    ELSE unit_cost / GREATEST(qty_in_base_unit_per_purchase, 1)
-  END;
+DROP TABLE IF EXISTS `suppliers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `suppliers` (
+  `id` char(36) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT (uuid()),
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `contact` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `address` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `code` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `contact_person` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+  `phone` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+  `city` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+  `terms` text COLLATE utf8mb4_unicode_ci,
+  `notes` text COLLATE utf8mb4_unicode_ci,
+  `created_by` char(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `code` (`code`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-UPDATE receiving_items
-SET
-  qty_accepted = CASE
-    WHEN qty_accepted > 0 THEN qty_accepted
-    ELSE GREATEST(qty_received - qty_rejected, 0)
-  END,
-  purchase_unit_id = COALESCE(purchase_unit_id, (SELECT default_purchase_unit_id FROM inv_products p WHERE p.id = receiving_items.product_id LIMIT 1)),
-  purchase_unit_name = CASE
-    WHEN purchase_unit_name != '' THEN purchase_unit_name
-    ELSE COALESCE((SELECT u.name FROM inv_products p LEFT JOIN inv_units u ON u.id = COALESCE(p.default_purchase_unit_id, p.unit_id) WHERE p.id = receiving_items.product_id LIMIT 1), '')
-  END,
-  qty_in_base_unit_per_purchase = CASE
-    WHEN qty_in_base_unit_per_purchase > 0 THEN qty_in_base_unit_per_purchase
-    ELSE 1
-  END,
-  qty_received_in_base_unit = CASE
-    WHEN qty_received_in_base_unit > 0 THEN qty_received_in_base_unit
-    ELSE qty_received * GREATEST(qty_in_base_unit_per_purchase, 1)
-  END,
-  qty_accepted_in_base_unit = CASE
-    WHEN qty_accepted_in_base_unit > 0 THEN qty_accepted_in_base_unit
-    ELSE qty_accepted * GREATEST(qty_in_base_unit_per_purchase, 1)
-  END,
-  qty_rejected_in_base_unit = CASE
-    WHEN qty_rejected_in_base_unit > 0 THEN qty_rejected_in_base_unit
-    ELSE qty_rejected * GREATEST(qty_in_base_unit_per_purchase, 1)
-  END,
-  unit_cost_per_base = CASE
-    WHEN unit_cost_per_base > 0 THEN unit_cost_per_base
-    ELSE unit_cost / GREATEST(qty_in_base_unit_per_purchase, 1)
-  END;
+--
+-- Table structure for table `system_state`
+--
 
-UPDATE sale_items
-SET
-  qty_in_base_unit_per_unit = CASE
-    WHEN qty_in_base_unit_per_unit > 0 THEN qty_in_base_unit_per_unit
-    ELSE 1
-  END,
-  total_base_qty_deducted = CASE
-    WHEN total_base_qty_deducted > 0 THEN total_base_qty_deducted
-    ELSE qty * GREATEST(qty_in_base_unit_per_unit, 1)
-  END,
-  wholesale_enabled = COALESCE(wholesale_enabled, 0),
-  wholesale_break_qty_in_base_unit = CASE WHEN wholesale_break_qty_in_base_unit > 0 THEN wholesale_break_qty_in_base_unit ELSE 0 END,
-  wholesale_block_price = CASE WHEN wholesale_block_price > 0 THEN wholesale_block_price ELSE 0 END,
-  wholesale_blocks_applied = CASE WHEN wholesale_blocks_applied > 0 THEN wholesale_blocks_applied ELSE 0 END,
-  wholesale_base_qty_applied = CASE WHEN wholesale_base_qty_applied > 0 THEN wholesale_base_qty_applied ELSE 0 END,
-  retail_remainder_base_qty = CASE
-    WHEN retail_remainder_base_qty > 0 THEN retail_remainder_base_qty
-    ELSE qty * GREATEST(qty_in_base_unit_per_unit, 1)
-  END,
-  pricing_breakdown = COALESCE(pricing_breakdown, '');
+DROP TABLE IF EXISTS `system_state`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `system_state` (
+  `setting_key` varchar(255) NOT NULL,
+  `value` text NOT NULL,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`setting_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
 
-UPDATE held_sale_items
-SET
-  qty_in_base_unit_per_unit = CASE
-    WHEN qty_in_base_unit_per_unit > 0 THEN qty_in_base_unit_per_unit
-    ELSE 1
-  END,
-  total_base_qty_deducted = CASE
-    WHEN total_base_qty_deducted > 0 THEN total_base_qty_deducted
-    ELSE qty * GREATEST(qty_in_base_unit_per_unit, 1)
-  END,
-  wholesale_enabled = COALESCE(wholesale_enabled, 0),
-  wholesale_break_qty_in_base_unit = CASE WHEN wholesale_break_qty_in_base_unit > 0 THEN wholesale_break_qty_in_base_unit ELSE 0 END,
-  wholesale_block_price = CASE WHEN wholesale_block_price > 0 THEN wholesale_block_price ELSE 0 END,
-  wholesale_blocks_applied = CASE WHEN wholesale_blocks_applied > 0 THEN wholesale_blocks_applied ELSE 0 END,
-  wholesale_base_qty_applied = CASE WHEN wholesale_base_qty_applied > 0 THEN wholesale_base_qty_applied ELSE 0 END,
-  retail_remainder_base_qty = CASE
-    WHEN retail_remainder_base_qty > 0 THEN retail_remainder_base_qty
-    ELSE qty * GREATEST(qty_in_base_unit_per_unit, 1)
-  END,
-  pricing_breakdown = COALESCE(pricing_breakdown, '');
+--
+-- Table structure for table `transactions`
+--
+
+DROP TABLE IF EXISTS `transactions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `transactions` (
+  `id` char(36) NOT NULL DEFAULT (uuid()),
+  `account_id` char(36) NOT NULL,
+  `transaction_type` varchar(20) NOT NULL,
+  `transaction_category` varchar(30) NOT NULL DEFAULT 'regular',
+  `cash_in_mode` varchar(20) DEFAULT NULL,
+  `amount` decimal(12,2) NOT NULL,
+  `transaction_fee` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `amount_received` decimal(12,2) DEFAULT NULL,
+  `fee_type` varchar(20) NOT NULL DEFAULT 'gcash',
+  `delivery_fee` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `cash_balance` decimal(12,2) NOT NULL DEFAULT '0.00',
+  `date` date NOT NULL,
+  `description` text NOT NULL,
+  `reference_number` varchar(255) NOT NULL DEFAULT '',
+  `source` varchar(50) NOT NULL DEFAULT 'gcash',
+  `notes` text,
+  `cash_source` varchar(50) DEFAULT NULL,
+  `cash_out_type` varchar(50) DEFAULT NULL,
+  `bank_account_id` char(36) DEFAULT NULL,
+  `source_module` varchar(60) DEFAULT NULL,
+  `source_reference_id` char(36) DEFAULT NULL,
+  `source_sale_id` char(36) DEFAULT NULL,
+  `reversal_of_transaction_id` char(36) DEFAULT NULL,
+  `disbursement_id` char(36) DEFAULT NULL,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `is_closed` tinyint(1) NOT NULL DEFAULT '0',
+  `cleared_at` datetime DEFAULT NULL,
+  `source_pos_remittance_id` char(36) DEFAULT NULL,
+  `created_by` char(36) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_transactions_account_date` (`account_id`,`date`),
+  KEY `idx_transactions_date` (`date`),
+  CONSTRAINT `transactions_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `transactions_chk_1` CHECK ((`transaction_type` in (_utf8mb4'cash_in',_utf8mb4'cash_out'))),
+  CONSTRAINT `transactions_chk_2` CHECK ((`fee_type` in (_utf8mb4'gcash',_utf8mb4'cash'))),
+  CONSTRAINT `transactions_chk_3` CHECK ((`source` in (_utf8mb4'gcash',_utf8mb4'cash')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping routines for database 'gcash_pos'
+--
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-04-19 10:28:20
