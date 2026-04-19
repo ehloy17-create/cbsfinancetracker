@@ -1,0 +1,13 @@
+node_modules
+server/node_modules
+dist
+release
+.git
+.gitignore
+.vscode
+.env
+.env.*
+logs
+*.log
+deploy/vendor/node-runtime
+deploy/vendor/mariadb-runtime

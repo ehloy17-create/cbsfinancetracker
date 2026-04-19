@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"C:\\\\\\\\Users\\\\\\\\Dyuwil\\\\\\\\.claude\\\\\\\\projects\\\\\\\\d--DEV-project\\\\\\\\memory\\\\\\\\\")",
+      "Bash(cmd //c \"dir C:\\\\\\\\Users\\\\\\\\Dyuwil\\\\\\\\.claude\\\\\\\\projects\\\\\\\\\")",
+      "Bash(cmd //c \"mkdir C:\\\\\\\\Users\\\\\\\\Dyuwil\\\\\\\\.claude\\\\\\\\projects\\\\\\\\d--DEV-project\\\\\\\\memory\")",
+      "Bash(node --input-type=module --eval ' *)",
+      "Bash(node --check scripts/deployment/build-updater.mjs)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

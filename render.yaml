@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: biztracker
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 3306
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: gcash_pos
+      - key: JWT_SECRET
+        sync: false
+      - key: APP_PUBLIC_BASE_URL
+        sync: false
+      - key: VITE_APP_URL
+        sync: false
+      - key: VITE_API_URL
+        value: ""

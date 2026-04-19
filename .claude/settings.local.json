@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(cp d:/DEV/project/src/pages/DashboardPage.tsx d:/DEV/project/src/pages/DashboardPage.tsx.bak)",
+      "Bash(cp d:/DEV/project/src/lib/financeMonitoring.ts d:/DEV/project/src/lib/financeMonitoring.ts.bak)",
+      "Bash(npx tsc *)",
+      "Bash(npx eslint *)",
+      "Read(//c/Users/Dyuwil/.claude/projects/d--DEV-project/**)",
+      "Read(//mnt/c/Users/Dyuwil/.claude/projects/d--DEV-project/**)"
+    ]
+  }
+}
