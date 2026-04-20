@@ -103,7 +103,6 @@ const navGroups: NavGroup[] = [
       { to: '/gcash', icon: Wallet, label: 'GCash Dashboard' },
       { to: '/cash-in', icon: ArrowDownCircle, label: 'Cash In' },
       { to: '/cash-out', icon: ArrowUpCircle, label: 'Cash Out' },
-      { to: '/cash-ledger', icon: Banknote, label: 'Cash Ledger' },
       { to: '/remittances', icon: ArrowRightLeft, label: 'Remittances' },
       { to: '/transactions', icon: List, label: 'Transactions' },
       { to: '/history', icon: History, label: 'Daily History' },
@@ -113,6 +112,7 @@ const navGroups: NavGroup[] = [
     label: 'Finance',
     icon: Building2,
     children: [
+      { to: '/cash-ledger', icon: Banknote, label: 'Cash Ledger' },
       { to: '/bank', icon: Building2, label: 'Bank' },
       { to: '/finance-deposits', icon: ArrowDownCircle, label: 'GCash Deposits' },
       { to: '/owner-movements', icon: Banknote, label: 'Owner Ledger' },
@@ -146,9 +146,9 @@ const navGroups: NavGroup[] = [
     icon: ShoppingBag,
     children: [
       { to: '/inventory/pos', icon: ShoppingBag, label: 'POS' },
-      { to: '/price-checker', icon: ScanLine, label: 'Price Checker' },
       { to: '/inventory/pos/customers', icon: Users, label: 'Customer Ledger & Credit' },
       { to: '/timeclock/app', icon: Clock, label: 'Daily Time Record' },
+      { to: '/price-checker', icon: ScanLine, label: 'Price Checker' },
       { to: '/inventory/pos/shifts', icon: Clock, label: 'POS Shifts' },
       { to: '/inventory/pos/terminals', icon: MonitorSmartphone, label: 'POS Terminals' },
     ],

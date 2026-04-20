@@ -128,6 +128,9 @@ const ALWAYS_ALLOWED_EXACT = new Set([
 const ACCOUNTING_BLOCKED_EXACT = new Set([
   '/timeclock',
   '/timeclock/app',
+  '/price-checker',
+  '/price-checker/kiosk',
+  '/price-checker/app',
 ]);
 
 // Paths that only admin can ever access (no module override possible)
