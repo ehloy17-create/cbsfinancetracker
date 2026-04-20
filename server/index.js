@@ -11,7 +11,7 @@ import pool from './db.js';
 import authRoutes      from './routes/auth.js';
 import holdSlipRoutes  from './routes/holdSlip.js';
 import profileRoutes   from './routes/profiles.js';
-import genericRoutes   from './routes/generic.js';
+import genericRoutes, { clearTableColumnCache } from './routes/generic.js';
 import rpcRoutes       from './routes/rpc.js';
 import backupRoutes    from './routes/backup.js';
 import { ensureFinanceMonitoringSchema, ensurePosMultiPricingSchema, ensurePayrollTables, ensureCompanySettings, ensureDbCollation } from './schemaCompat.js';
@@ -192,6 +192,7 @@ async function start() {
   await ensureFinanceMonitoringSchema();
   await ensurePayrollTables();
   await ensureCompanySettings();
+  clearTableColumnCache(); // refresh after schema migrations
   await purgeExpiredAuditLogs();
   setInterval(() => {
     void purgeExpiredAuditLogs();

@@ -1128,4 +1128,9 @@ router.delete('/rest/v1/:table', requireAuth, async (req, res) => {
   }
 });
 
+export function clearTableColumnCache(table) {
+  if (table) TABLE_COLUMN_CACHE.delete(table);
+  else TABLE_COLUMN_CACHE.clear();
+}
+
 export default router;
