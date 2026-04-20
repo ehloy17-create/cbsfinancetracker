@@ -459,7 +459,7 @@ async function ensureProfilesRoleConstraint() {
     await pool.query(`
       ALTER TABLE \`profiles\`
       ADD CONSTRAINT \`profiles_role_chk\`
-      CHECK (\`role\` IN ('admin', 'staff', 'cashier'))
+      CHECK (\`role\` IN ('admin', 'accounting', 'staff', 'cashier'))
     `);
   } catch (error) {
     if (error?.code !== 'ER_DUP_KEYNAME' && error?.code !== 'ER_CHECK_CONSTRAINT_DUP_NAME') throw error;

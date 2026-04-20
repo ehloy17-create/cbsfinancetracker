@@ -171,6 +171,12 @@ if (hasFrontendBuild) {
 
 app.use('/',            genericRoutes);   // handles /rest/v1/:table
 
+// Catch-all error logger — prints any unhandled 500s with the URL and message
+app.use((err, req, res, _next) => {
+  console.error(`[500] ${req.method} ${req.originalUrl} — ${err?.message || err}`);
+  res.status(500).json({ error: err?.message || 'Internal server error' });
+});
+
 async function start() {
   const accessUrls = getServerAccessUrls(PORT);
   await logEvent('api', 'startup.begin', {
