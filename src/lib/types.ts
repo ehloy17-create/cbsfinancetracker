@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'staff' | 'cashier';
+export type UserRole = 'admin' | 'accounting' | 'staff' | 'cashier';
 export type TransactionCategory = 'regular' | 'disbursement' | 'transfer';
 export type BankTxType =
   | 'deposit'

@@ -31,7 +31,7 @@ import { Router } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import pool from '../db.js';
 import { requireAuth } from '../middleware/auth.js';
-import { isAdminRole, isKnownUserRole } from '../lib/accessControl.js';
+import { isAdminRole, isAccountingRole, isKnownUserRole } from '../lib/accessControl.js';
 import { syncSupplierTable } from '../lib/supplierMirror.js';
 
 const router = Router();
@@ -686,7 +686,8 @@ function parseFilters(query, reservedKeys, allowedColumns = null) {
 const RESERVED = new Set(['select','order','limit','offset']);
 
 function appendAccessConditions(table, req, conditions, params) {
-  if (isAdminRole(req.user?.role)) return;
+  // Admin and accounting see all rows without restriction
+  if (isAccountingRole(req.user?.role)) return;
 
   if (table === 'profiles') {
     conditions.push('`id` = ?');

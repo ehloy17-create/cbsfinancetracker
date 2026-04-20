@@ -17,7 +17,7 @@ import {
   FinanceDueItem,
   loadFinanceMonitoringSnapshot,
 } from '../lib/financeMonitoring';
-import { canAccessPath, getUserRoleLabel } from '../lib/accessControl';
+import { canAccessPath, getUserRoleLabel, isAccountingRole } from '../lib/accessControl';
 
 const STATUS_CONFIG: Record<CheckStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   draft: { label: 'Draft', color: 'text-slate-700', bg: 'bg-slate-50', icon: <Clock className="w-4 h-4" /> },
@@ -46,6 +46,7 @@ export default function DashboardPage() {
   const today = getTodayDateString();
   const role = profile?.role;
   const isAdmin = role === 'admin';
+  const isFinanceUser = isAccountingRole(role);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -90,7 +91,7 @@ export default function DashboardPage() {
   ), []);
 
   const load = useCallback(async (silent = false) => {
-    if (!isAdmin) {
+    if (!isFinanceUser) {
       setLoading(false);
       setRefreshing(false);
       setHasDashboardData(false);
@@ -155,7 +156,7 @@ export default function DashboardPage() {
         queuedRefreshRef.current = false;
       }
     }
-  }, [hasSnapshotData, isAdmin, showToast]);
+  }, [hasSnapshotData, isFinanceUser, showToast]);
 
   useEffect(() => { void load(false); }, [load]);
 
@@ -303,7 +304,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold text-white">Main Dashboard</h1>
           <p className="text-slate-400 text-sm mt-0.5">{safeFormatDate(today)} · {getUserRoleLabel(role)}</p>
         </div>
-        {isAdmin && (
+        {isFinanceUser && (
           <button
             onClick={() => load(true)}
             disabled={refreshing}
@@ -316,7 +317,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── TOP: Finance Balance Widgets ─────────────────────────── */}
-      {isAdmin && (
+      {isFinanceUser && (
         <>
           {!hasDashboardData && (
             <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800">
