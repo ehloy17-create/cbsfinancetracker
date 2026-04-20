@@ -1,17 +1,14 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { UserPlus, CreditCard as Edit2, AlertTriangle, Check, X, Trash2 } from 'lucide-react';
+import { UserPlus, CreditCard as Edit2, AlertTriangle, Check, X, Trash2, ShieldCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../lib/types';
 import { formatDateTime } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { writeAuditLog } from '../lib/audit';
-import {
-  ALL_USER_ROLES, getUserRoleLabel,
-  MODULE_DEFS, ALL_MODULE_KEYS, ROLE_DEFAULT_MODULES,
-  parseModuleAccess, ModuleKey,
-} from '../lib/accessControl';
+import { ALL_USER_ROLES, getUserRoleLabel } from '../lib/accessControl';
 import ConfirmDialog from '../components/ConfirmDialog';
+import UserPermissionsModal from '../components/UserPermissionsModal';
 
 export default function UsersPage() {
   const { user, profile } = useAuth();
@@ -26,6 +23,7 @@ export default function UsersPage() {
   const [newRole, setNewRole] = useState<Profile['role']>('staff');
   const [submitting, setSubmitting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
+  const [permissionsTarget, setPermissionsTarget] = useState<Profile | null>(null);
 
   async function load() {
     setLoading(true);
@@ -85,16 +83,14 @@ export default function UsersPage() {
     if (!editUser) return;
     setSubmitting(true);
     try {
-      const moduleAccessValue = editUser.module_access === undefined ? null : editUser.module_access;
       await supabase
         .from('profiles')
-        .update({ role: editUser.role, status: editUser.status, name: editUser.name, module_access: moduleAccessValue })
+        .update({ role: editUser.role, status: editUser.status, name: editUser.name })
         .eq('id', editUser.id);
 
       await writeAuditLog(user?.id ?? null, 'UPDATE_USER', 'Users', editUser.id, {
         role: editUser.role,
         status: editUser.status,
-        module_access: moduleAccessValue,
       });
 
       showToast('User updated', 'success');
@@ -122,6 +118,27 @@ export default function UsersPage() {
       load();
     } catch (err) {
       showToast((err as Error).message || 'Failed to delete user', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleSavePermissions(moduleAccess: string | null) {
+    if (!permissionsTarget) return;
+    setSubmitting(true);
+    try {
+      await supabase
+        .from('profiles')
+        .update({ module_access: moduleAccess })
+        .eq('id', permissionsTarget.id);
+      await writeAuditLog(user?.id ?? null, 'UPDATE_USER', 'Users', permissionsTarget.id, {
+        module_access: moduleAccess,
+      });
+      showToast('Permissions saved', 'success');
+      setPermissionsTarget(null);
+      load();
+    } catch {
+      showToast('Failed to save permissions', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -213,6 +230,13 @@ export default function UsersPage() {
                           title="Edit user"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setPermissionsTarget({ ...u })}
+                          className="p-1.5 rounded text-slate-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                          title="Module permissions"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => setDeleteTarget({ ...u })}
@@ -322,66 +346,6 @@ export default function UsersPage() {
                 </select>
               </div>
 
-              {/* Module Permissions */}
-              {editUser.role !== 'admin' && (() => {
-                const parsedAccess = parseModuleAccess(editUser.module_access);
-                const effectiveModules = parsedAccess ?? ROLE_DEFAULT_MODULES[editUser.role] ?? [];
-                const isCustom = parsedAccess !== null;
-
-                const toggleModule = (key: ModuleKey) => {
-                  const current = parsedAccess ?? ROLE_DEFAULT_MODULES[editUser.role] ?? [];
-                  const next = current.includes(key)
-                    ? current.filter(k => k !== key)
-                    : [...current, key];
-                  setEditUser({ ...editUser, module_access: JSON.stringify(next) });
-                };
-
-                const groups = ['Finance', 'Operations', 'Management'] as const;
-
-                return (
-                  <div>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-sm font-medium text-slate-700">Module Access</label>
-                      {isCustom && (
-                        <button
-                          type="button"
-                          onClick={() => setEditUser({ ...editUser, module_access: null })}
-                          className="text-xs text-blue-600 hover:underline"
-                        >
-                          Reset to role defaults
-                        </button>
-                      )}
-                    </div>
-                    {!isCustom && (
-                      <p className="text-xs text-slate-400 mb-2">Using role defaults. Check/uncheck to override.</p>
-                    )}
-                    <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-52 overflow-y-auto">
-                      {groups.map(group => {
-                        const groupKeys = ALL_MODULE_KEYS.filter(k => MODULE_DEFS[k].group === group);
-                        return (
-                          <div key={group} className="p-2">
-                            <p className="text-[10px] font-semibold uppercase text-slate-400 tracking-wider mb-1.5 px-1">{group}</p>
-                            <div className="space-y-1">
-                              {groupKeys.map(key => (
-                                <label key={key} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-slate-50 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={effectiveModules.includes(key)}
-                                    onChange={() => toggleModule(key)}
-                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                  />
-                                  <span className="text-sm text-slate-700">{MODULE_DEFS[key].label}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setEditUser(null)}
                   className="flex-1 py-2.5 border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">
@@ -405,6 +369,13 @@ export default function UsersPage() {
         onConfirm={handleDeleteUser}
         onCancel={() => setDeleteTarget(null)}
       />
+      {permissionsTarget && (
+        <UserPermissionsModal
+          user={permissionsTarget}
+          onSave={handleSavePermissions}
+          onClose={() => setPermissionsTarget(null)}
+        />
+      )}
     </div>
   );
 }

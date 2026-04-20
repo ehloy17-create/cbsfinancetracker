@@ -23,23 +23,24 @@ export type ModuleKey =
 export interface ModuleDef {
   label: string;
   group: 'Finance' | 'Operations' | 'Management';
+  description: string;
 }
 
 export const MODULE_DEFS: Record<ModuleKey, ModuleDef> = {
-  gcash_view:         { label: 'GCash Dashboard',                group: 'Finance' },
-  gcash_transactions: { label: 'GCash Transactions (in/out)',     group: 'Finance' },
-  cash_ledger:        { label: 'Cash Ledger',                    group: 'Finance' },
-  bank:               { label: 'Bank & Reconciliation',          group: 'Finance' },
-  checks:             { label: 'Check Issuance',                 group: 'Finance' },
-  disbursements:      { label: 'Disbursements',                  group: 'Finance' },
-  deposits:           { label: 'Deposits',                       group: 'Finance' },
-  suppliers:          { label: 'Suppliers & Ledger',             group: 'Finance' },
-  owner_movements:    { label: 'Owner Movements & Obligations',  group: 'Finance' },
-  pos:                { label: 'POS / Cashier',                  group: 'Operations' },
-  inventory:          { label: 'Inventory Management',           group: 'Operations' },
-  reports:            { label: 'Reports',                        group: 'Management' },
-  payroll:            { label: 'Payroll',                        group: 'Management' },
-  sales:              { label: 'Sales',                          group: 'Management' },
+  gcash_view:         { label: 'GCash Dashboard',               group: 'Finance',     description: 'GCash balance overview and account summary' },
+  gcash_transactions: { label: 'GCash Transactions',            group: 'Finance',     description: 'Cash-in, cash-out, remittances, transaction history' },
+  cash_ledger:        { label: 'Cash Ledger',                   group: 'Finance',     description: 'Daily cash fund tracking and ledger entries' },
+  bank:               { label: 'Bank & Reconciliation',         group: 'Finance',     description: 'Bank accounts, transfers, and reconciliation' },
+  checks:             { label: 'Check Issuance',                group: 'Finance',     description: 'Issue and track checks to suppliers and payees' },
+  disbursements:      { label: 'Disbursements',                 group: 'Finance',     description: 'Record expenses paid via cash, check, or GCash' },
+  deposits:           { label: 'Deposits',                      group: 'Finance',     description: 'GCash-to-bank deposit tracking' },
+  suppliers:          { label: 'Suppliers & Ledger',            group: 'Finance',     description: 'Supplier directory, payables, and ledger history' },
+  owner_movements:    { label: 'Owner Movements & Obligations', group: 'Finance',     description: 'Owner fund movements and recurring obligations' },
+  pos:                { label: 'POS / Cashier',                 group: 'Operations',  description: 'Point-of-sale, shifts, terminals, customer credit' },
+  inventory:          { label: 'Inventory Management',          group: 'Operations',  description: 'Products, stock levels, purchase orders' },
+  reports:            { label: 'Reports',                       group: 'Management',  description: 'P&L, cash flow, projected balance, and snapshots' },
+  payroll:            { label: 'Payroll',                       group: 'Management',  description: 'Employee payroll, DTR, cutoffs, and payroll reports' },
+  sales:              { label: 'Sales Analytics',               group: 'Management',  description: 'Daily sales entry and sales performance analytics' },
 };
 
 export const ALL_MODULE_KEYS = Object.keys(MODULE_DEFS) as ModuleKey[];
