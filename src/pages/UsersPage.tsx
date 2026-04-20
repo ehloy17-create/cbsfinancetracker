@@ -140,9 +140,14 @@ export default function UsersPage() {
           body: JSON.stringify({ module_access: moduleAccess }),
         }
       );
+      const body = await res.json().catch(() => null);
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body?.error || `Server error ${res.status}`);
+        throw new Error((body as any)?.error || `Server error ${res.status}`);
+      }
+      // Empty array means the server ignored module_access (stale server code)
+      const saved = Array.isArray(body) ? body[0] : null;
+      if (!saved || !('module_access' in saved)) {
+        throw new Error('Server did not save permissions — please restart the server and try again');
       }
       await writeAuditLog(user?.id ?? null, 'UPDATE_USER', 'Users', permissionsTarget.id, {
         module_access: moduleAccess,

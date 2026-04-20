@@ -1009,6 +1009,8 @@ router.patch('/rest/v1/:table', requireAuth, async (req, res) => {
     return res.status(400).json({ error: `Table "${table}" not allowed` });
 
   try {
+    // Always re-read columns for profiles so added columns (e.g. module_access) are never silently dropped
+    if (table === 'profiles') TABLE_COLUMN_CACHE.delete(table);
     const availableColumns = await getTableColumns(table);
     const { conditions, params } = parseFilters(req.query, RESERVED, availableColumns);
     appendAccessConditions(table, req, conditions, params);
