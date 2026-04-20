@@ -9,6 +9,7 @@ import { writeAuditLog } from '../lib/audit';
 import { ALL_USER_ROLES, getUserRoleLabel } from '../lib/accessControl';
 import ConfirmDialog from '../components/ConfirmDialog';
 import UserPermissionsModal from '../components/UserPermissionsModal';
+import { buildApiUrl } from '../lib/apiBase';
 
 export default function UsersPage() {
   const { user, profile } = useAuth();
@@ -127,18 +128,30 @@ export default function UsersPage() {
     if (!permissionsTarget) return;
     setSubmitting(true);
     try {
-      await supabase
-        .from('profiles')
-        .update({ module_access: moduleAccess })
-        .eq('id', permissionsTarget.id);
+      const token = localStorage.getItem('access_token');
+      const res = await fetch(
+        buildApiUrl(`/profiles?id=eq.${permissionsTarget.id}`),
+        {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ module_access: moduleAccess }),
+        }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body?.error || `Server error ${res.status}`);
+      }
       await writeAuditLog(user?.id ?? null, 'UPDATE_USER', 'Users', permissionsTarget.id, {
         module_access: moduleAccess,
       });
       showToast('Permissions saved', 'success');
       setPermissionsTarget(null);
       load();
-    } catch {
-      showToast('Failed to save permissions', 'error');
+    } catch (err) {
+      showToast((err as Error).message || 'Failed to save permissions', 'error');
     } finally {
       setSubmitting(false);
     }
