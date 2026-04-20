@@ -1,5 +1,5 @@
 import { useState, useEffect, FormEvent } from 'react';
-import { UserPlus, CreditCard as Edit2, AlertTriangle, Check, X } from 'lucide-react';
+import { UserPlus, CreditCard as Edit2, AlertTriangle, Check, X, Trash2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../lib/types';
 import { formatDateTime } from '../lib/utils';
@@ -7,6 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { writeAuditLog } from '../lib/audit';
 import { ALL_USER_ROLES, getUserRoleLabel } from '../lib/accessControl';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function UsersPage() {
   const { user, profile } = useAuth();
@@ -20,6 +21,7 @@ export default function UsersPage() {
   const [newName, setNewName] = useState('');
   const [newRole, setNewRole] = useState<Profile['role']>('staff');
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Profile | null>(null);
 
   async function load() {
     setLoading(true);
@@ -94,6 +96,26 @@ export default function UsersPage() {
       load();
     } catch {
       showToast('Failed to update user', 'error');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDeleteUser() {
+    if (!deleteTarget) return;
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', deleteTarget.id);
+      if (error) throw new Error(error.message);
+      await writeAuditLog(user?.id ?? null, 'DELETE_USER', 'Users', deleteTarget.id, {
+        email: deleteTarget.email,
+        role: deleteTarget.role,
+      });
+      showToast('User deleted', 'success');
+      setDeleteTarget(null);
+      load();
+    } catch (err) {
+      showToast((err as Error).message || 'Failed to delete user', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -178,12 +200,23 @@ export default function UsersPage() {
                       {u.last_login ? formatDateTime(u.last_login) : 'Never'}
                     </td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => setEditUser({ ...u })}
-                        className="p-1.5 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setEditUser({ ...u })}
+                          className="p-1.5 rounded text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                          title="Edit user"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget({ ...u })}
+                          disabled={u.id === user?.id || (u.role === 'admin' && users.filter(x => x.role === 'admin').length === 1)}
+                          className="p-1.5 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={u.id === user?.id ? "Can't delete yourself" : u.role === 'admin' && users.filter(x => x.role === 'admin').length === 1 ? 'Last admin — cannot delete' : 'Delete user'}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -296,6 +329,15 @@ export default function UsersPage() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete User"
+        message={`Permanently delete "${deleteTarget?.name}" (${deleteTarget?.email})? This cannot be undone.`}
+        confirmLabel={submitting ? 'Deleting…' : 'Delete'}
+        danger
+        onConfirm={handleDeleteUser}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
