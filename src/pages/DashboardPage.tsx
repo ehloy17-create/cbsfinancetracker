@@ -17,7 +17,7 @@ import {
   FinanceDueItem,
   loadFinanceMonitoringSnapshot,
 } from '../lib/financeMonitoring';
-import { canAccessPath, getUserRoleLabel, isAccountingRole } from '../lib/accessControl';
+import { canAccessPath, getUserRoleLabel, isAccountingRole, parseModuleAccess } from '../lib/accessControl';
 
 const STATUS_CONFIG: Record<CheckStatus, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
   draft: { label: 'Draft', color: 'text-slate-700', bg: 'bg-slate-50', icon: <Clock className="w-4 h-4" /> },
@@ -47,6 +47,7 @@ export default function DashboardPage() {
   const role = profile?.role;
   const isAdmin = role === 'admin';
   const isFinanceUser = isAccountingRole(role);
+  const moduleAccess = parseModuleAccess(profile?.module_access);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -277,7 +278,7 @@ export default function DashboardPage() {
   ]
     .map(group => ({
       ...group,
-      items: group.items.filter(item => canAccessPath(role, item.route)),
+      items: group.items.filter(item => canAccessPath(role, item.route, moduleAccess)),
     }))
     .filter(group => group.items.length > 0);
 
@@ -286,7 +287,7 @@ export default function DashboardPage() {
     { label: 'Checks', icon: FileText, route: '/checks' },
     { label: 'Users', icon: Users, route: '/users' },
     { label: 'Sales', icon: Banknote, route: '/sales' },
-  ].filter(item => canAccessPath(role, item.route));
+  ].filter(item => canAccessPath(role, item.route, moduleAccess));
 
   if (loading) {
     return (

@@ -88,7 +88,7 @@ router.post('/sign-up', requireAuth, async (req, res) => {
     );
 
     const [rows] = await pool.query(
-      'SELECT id, name, email, role, status, created_at, last_login FROM profiles WHERE id = ?',
+      'SELECT id, name, email, role, status, created_at, last_login, module_access FROM profiles WHERE id = ?',
       [id]
     );
 
@@ -106,7 +106,7 @@ router.post('/sign-up', requireAuth, async (req, res) => {
 router.get('/session', requireAuth, async (req, res) => {
   try {
     const [rows] = await pool.query(
-      'SELECT id, name, email, role, status, created_at, last_login FROM profiles WHERE id = ?',
+      'SELECT id, name, email, role, status, created_at, last_login, module_access FROM profiles WHERE id = ?',
       [req.user.id]
     );
     const profile = rows[0];

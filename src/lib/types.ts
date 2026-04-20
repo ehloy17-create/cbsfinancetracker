@@ -52,6 +52,7 @@ export interface Profile {
   status: UserStatus;
   created_at: string;
   last_login: string | null;
+  module_access?: string | null;
 }
 
 export interface Account {

@@ -52,7 +52,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { writeAuditLog } from '../lib/audit';
-import { canAccessPath, getUserRoleLabel } from '../lib/accessControl';
+import { canAccessPath, getUserRoleLabel, parseModuleAccess } from '../lib/accessControl';
 import { useCompanySettings } from '../contexts/CompanySettingsContext';
 import { resolveApiBase } from '../lib/apiBase';
 
@@ -269,23 +269,24 @@ export default function Sidebar({ open, onClose }: SidebarProps) {
   const { settings: companySettings } = useCompanySettings();
 
   const role = profile?.role;
+  const moduleAccess = parseModuleAccess(profile?.module_access);
 
-  const visibleTopItems = topItems.filter(item => canAccessPath(role, item.to));
+  const visibleTopItems = topItems.filter(item => canAccessPath(role, item.to, moduleAccess));
   const visibleNavGroups = navGroups
     .map(group => ({
       ...group,
       children: group.children
         .map(child => {
           if (isSubGroup(child)) {
-            const items = child.items.filter(item => canAccessPath(role, item.to));
+            const items = child.items.filter(item => canAccessPath(role, item.to, moduleAccess));
             return items.length > 0 ? { ...child, items } : null;
           }
-          return canAccessPath(role, child.to) ? child : null;
+          return canAccessPath(role, child.to, moduleAccess) ? child : null;
         })
         .filter((child): child is NavChild => child !== null),
     }))
     .filter(group => group.children.length > 0);
-  const visibleAdminItems = adminItems.filter(item => canAccessPath(role, item.to));
+  const visibleAdminItems = adminItems.filter(item => canAccessPath(role, item.to, moduleAccess));
 
   const groupIsActive = (group: NavGroup) =>
     getAllItems(group).some(item => location.pathname === item.to);

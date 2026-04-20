@@ -441,6 +441,14 @@ async function ensureBankTransactionsTypeConstraint() {
   }
 }
 
+async function ensureProfilesModuleAccess() {
+  if (!(await tableExists('profiles'))) return;
+  const [cols] = await pool.query("SHOW COLUMNS FROM `profiles` LIKE 'module_access'");
+  if (cols.length === 0) {
+    await pool.query("ALTER TABLE `profiles` ADD COLUMN `module_access` TEXT NULL DEFAULT NULL");
+  }
+}
+
 async function ensureProfilesRoleConstraint() {
   if (!(await tableExists('profiles'))) return;
 
@@ -468,6 +476,7 @@ async function ensureProfilesRoleConstraint() {
 
 async function ensurePosMultiPricingSchema() {
   await ensureProfilesRoleConstraint();
+  await ensureProfilesModuleAccess();
   await ensurePurchaseOrderPrecision();
 
   // Ensure core tables use utf8mb4_unicode_ci so JOINs don't throw

@@ -9,7 +9,7 @@ const router = Router();
 router.get('/', requireAuth, async (req, res) => {
   try {
     const { id } = req.query;
-    let sql = 'SELECT id, name, email, role, status, created_at, last_login FROM profiles WHERE 1=1';
+    let sql = 'SELECT id, name, email, role, status, created_at, last_login, module_access FROM profiles WHERE 1=1';
     const params = [];
 
     if (id) {
@@ -38,7 +38,7 @@ router.patch('/', requireAuth, async (req, res) => {
 
   const targetId = id.replace(/^eq\./, '');
   const { password_hash, ...fields } = req.body;  // never allow direct hash update here
-  const allowed  = ['name', 'email', 'role', 'status', 'last_login'];
+  const allowed  = ['name', 'email', 'role', 'status', 'last_login', 'module_access'];
   const updates  = Object.keys(fields).filter(k => allowed.includes(k));
 
   if (!isAdminRole(req.user?.role)) {
@@ -63,7 +63,7 @@ router.patch('/', requireAuth, async (req, res) => {
     const vals = safeUpdates.map(k => fields[k]);
     await pool.query(`UPDATE profiles SET ${sets} WHERE id = ?`, [...vals, targetId]);
     const [rows] = await pool.query(
-      'SELECT id, name, email, role, status, created_at, last_login FROM profiles WHERE id = ?',
+      'SELECT id, name, email, role, status, created_at, last_login, module_access FROM profiles WHERE id = ?',
       [targetId]
     );
     res.json(rows);

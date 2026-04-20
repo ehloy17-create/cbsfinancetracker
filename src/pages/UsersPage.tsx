@@ -6,7 +6,11 @@ import { formatDateTime } from '../lib/utils';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { writeAuditLog } from '../lib/audit';
-import { ALL_USER_ROLES, getUserRoleLabel } from '../lib/accessControl';
+import {
+  ALL_USER_ROLES, getUserRoleLabel,
+  MODULE_DEFS, ALL_MODULE_KEYS, ROLE_DEFAULT_MODULES,
+  parseModuleAccess, ModuleKey,
+} from '../lib/accessControl';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 export default function UsersPage() {
@@ -81,14 +85,16 @@ export default function UsersPage() {
     if (!editUser) return;
     setSubmitting(true);
     try {
+      const moduleAccessValue = editUser.module_access === undefined ? null : editUser.module_access;
       await supabase
         .from('profiles')
-        .update({ role: editUser.role, status: editUser.status, name: editUser.name })
+        .update({ role: editUser.role, status: editUser.status, name: editUser.name, module_access: moduleAccessValue })
         .eq('id', editUser.id);
 
       await writeAuditLog(user?.id ?? null, 'UPDATE_USER', 'Users', editUser.id, {
         role: editUser.role,
         status: editUser.status,
+        module_access: moduleAccessValue,
       });
 
       showToast('User updated', 'success');
@@ -315,6 +321,67 @@ export default function UsersPage() {
                   <option value="inactive">Inactive</option>
                 </select>
               </div>
+
+              {/* Module Permissions */}
+              {editUser.role !== 'admin' && (() => {
+                const parsedAccess = parseModuleAccess(editUser.module_access);
+                const effectiveModules = parsedAccess ?? ROLE_DEFAULT_MODULES[editUser.role] ?? [];
+                const isCustom = parsedAccess !== null;
+
+                const toggleModule = (key: ModuleKey) => {
+                  const current = parsedAccess ?? ROLE_DEFAULT_MODULES[editUser.role] ?? [];
+                  const next = current.includes(key)
+                    ? current.filter(k => k !== key)
+                    : [...current, key];
+                  setEditUser({ ...editUser, module_access: JSON.stringify(next) });
+                };
+
+                const groups = ['Finance', 'Operations', 'Management'] as const;
+
+                return (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-sm font-medium text-slate-700">Module Access</label>
+                      {isCustom && (
+                        <button
+                          type="button"
+                          onClick={() => setEditUser({ ...editUser, module_access: null })}
+                          className="text-xs text-blue-600 hover:underline"
+                        >
+                          Reset to role defaults
+                        </button>
+                      )}
+                    </div>
+                    {!isCustom && (
+                      <p className="text-xs text-slate-400 mb-2">Using role defaults. Check/uncheck to override.</p>
+                    )}
+                    <div className="border border-slate-200 rounded-lg divide-y divide-slate-100 max-h-52 overflow-y-auto">
+                      {groups.map(group => {
+                        const groupKeys = ALL_MODULE_KEYS.filter(k => MODULE_DEFS[k].group === group);
+                        return (
+                          <div key={group} className="p-2">
+                            <p className="text-[10px] font-semibold uppercase text-slate-400 tracking-wider mb-1.5 px-1">{group}</p>
+                            <div className="space-y-1">
+                              {groupKeys.map(key => (
+                                <label key={key} className="flex items-center gap-2 px-1 py-0.5 rounded hover:bg-slate-50 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={effectiveModules.includes(key)}
+                                    onChange={() => toggleModule(key)}
+                                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                  />
+                                  <span className="text-sm text-slate-700">{MODULE_DEFS[key].label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="flex gap-3 pt-2">
                 <button onClick={() => setEditUser(null)}
                   className="flex-1 py-2.5 border border-slate-300 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50">
