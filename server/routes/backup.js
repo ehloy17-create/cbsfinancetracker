@@ -147,11 +147,17 @@ router.post('/restore', requireAuth, requireAdmin, restoreUpload.single('backup'
     return res.status(400).json({ error: 'No .sql file uploaded' });
   }
 
-  const sql = req.file.buffer.toString('utf8');
+  let sql = req.file.buffer.toString('utf8');
 
   if (!sql.trim()) {
     return res.status(400).json({ error: 'Uploaded file is empty' });
   }
+
+  // Strip UUID expression defaults — MySQL < 8.0.13 does not support expression
+  // defaults at all (DEFAULT (uuid()) or DEFAULT uuid() both fail). Safe to remove
+  // because every INSERT in the dump already supplies explicit id values.
+  sql = sql.replace(/\s+DEFAULT\s+\(uuid\(\)\)/gi, '');
+  sql = sql.replace(/\s+DEFAULT\s+uuid\(\)/gi, '');
 
   let conn;
   try {
