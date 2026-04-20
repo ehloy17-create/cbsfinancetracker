@@ -48,7 +48,7 @@ export const ALL_MODULE_KEYS = Object.keys(MODULE_DEFS) as ModuleKey[];
 // Default modules each role can access when no per-user override is set
 export const ROLE_DEFAULT_MODULES: Record<UserRole, ModuleKey[]> = {
   admin:      ALL_MODULE_KEYS,
-  accounting: ['cash_ledger', 'bank', 'checks', 'disbursements', 'deposits', 'suppliers', 'owner_movements', 'reports'],
+  accounting: ALL_MODULE_KEYS,
   staff:      ['gcash_view', 'gcash_transactions', 'cash_ledger'],
   cashier:    ['gcash_view', 'gcash_transactions', 'pos'],
 };
@@ -125,14 +125,6 @@ const ALWAYS_ALLOWED_EXACT = new Set([
   '/price-checker/app',
 ]);
 
-// Paths not accessible to the accounting role specifically
-const ACCOUNTING_BLOCKED_EXACT = new Set([
-  '/timeclock',
-  '/timeclock/app',
-  '/price-checker',
-  '/price-checker/kiosk',
-  '/price-checker/app',
-]);
 
 // Paths that only admin can ever access (no module override possible)
 const ADMIN_ONLY_EXACT = new Set([
@@ -164,7 +156,6 @@ export function canAccessPath(
 
   const path = normalizePath(rawPath);
 
-  if (role === 'accounting' && ACCOUNTING_BLOCKED_EXACT.has(path)) return false;
   if (ALWAYS_ALLOWED_EXACT.has(path)) return true;
   if (ADMIN_ONLY_EXACT.has(path))     return false;
 

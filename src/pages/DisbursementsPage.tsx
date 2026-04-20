@@ -78,8 +78,7 @@ interface EnrichedDisbursement extends Disbursement {
 }
 
 export default function DisbursementsPage() {
-  const { user, profile } = useAuth();
-  const isAccountingOnly = profile?.role === 'accounting';
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [disbursements, setDisbursements] = useState<Disbursement[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -937,7 +936,7 @@ export default function DisbursementsPage() {
           ))}
         </div>
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-          {ACTIVE_PAYMENT_METHODS.filter(pm => !isAccountingOnly || (pm === 'cash' || pm === 'check')).map(pm => {
+          {ACTIVE_PAYMENT_METHODS.map(pm => {
             const cfg = PM_CONFIG[pm];
             return (
             <button
@@ -1516,7 +1515,7 @@ export default function DisbursementsPage() {
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Payment Method *</label>
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                  {ACTIVE_PAYMENT_METHODS.filter(pm => !isAccountingOnly || (pm === 'cash' || pm === 'check')).map(pm => {
+                  {ACTIVE_PAYMENT_METHODS.map(pm => {
                     const cfg = PM_CONFIG[pm];
                     return (
                     <button
